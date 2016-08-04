@@ -1,0 +1,4 @@
+Bwl.Network.Transport
+Igor Koshelev (igor@lifemotion.ru)
+
+Common Packet Transport interface. UDP & TCP realizations.
