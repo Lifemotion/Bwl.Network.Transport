@@ -90,7 +90,7 @@
     <Compile Include="Packet\BytePacketSettings.vb" />
     <Compile Include="Packet\BytePacketState.vb" />
     <Compile Include="Sockets\SocketBytePacket.vb" />
-    <Compile Include="Sockets\TCPTransport.vb" />
+    <Compile Include="Interfaces\PacketTransportStats.vb" />
     <Compile Include="Sockets\UDPTransportSimple.vb" />
     <Compile Include="Sockets\UDPTransport.vb" />
   </ItemGroup>

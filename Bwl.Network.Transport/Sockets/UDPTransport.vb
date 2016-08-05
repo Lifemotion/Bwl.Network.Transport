@@ -1,12 +1,18 @@
 ﻿Imports System.Net.Sockets
 Imports System.Net
+Imports Bwl.Network.Transport
 
 ''' <summary>
-''' UDP-base Packet Transport with big packets support, acknowledgments, sync or async sending.
+''' UDP-base Packet Transport with big packets support, acknowledgments, retransmits, sync or async sending.
 ''' If SendPacket completed (no exception), it means packet fully sent and fully received by other side.
 ''' </summary>
 Public Class UDPTransport
     Implements IPacketTransport, IDisposable
+    Public Event ReceivedPacket(packet As BytePacket) Implements IPacketTransport.ReceivedPacket
+    Public Event SentPacket(packet As BytePacket) Implements IPacketTransport.SentPacket
+    Public ReadOnly Property AverageTransmitTime As Integer
+    Public Property DefaultSettings As New BytePacketSettings Implements IPacketTransport.DefaultSettings
+    Public ReadOnly Property Stats As New PacketTransportStats Implements IPacketTransport.Stats
 
     Private _socket As Socket
     Private _receiveThread As New Threading.Thread(AddressOf ReceiveThread)
@@ -19,6 +25,8 @@ Public Class UDPTransport
 
     Private _receivingPackets As New List(Of SocketBytePacket)
     Private _sendingPackets As New List(Of SocketBytePacket)
+    Private _receiveThreadDelay As TimeSpan = TimeSpan.FromTicks(1)
+    Private _sendPacketDelay As TimeSpan = TimeSpan.FromTicks(1)
 
     Public Sub New()
         _receiveThread.Name = "UDPTransport_ReceiveThread"
@@ -37,7 +45,7 @@ Public Class UDPTransport
             Dim newPkt As New SocketBytePacket(id, partCount, totalBytes)
             newPkt.State.TransmitStarted = True
             newPkt.State.TransmitStartTime = Now
-
+            newPkt.Settings = DefaultSettings
             _receivingPackets.Add(newPkt)
             Return newPkt
         End SyncLock
@@ -48,31 +56,34 @@ Public Class UDPTransport
             Try
                 Dim removePacket As SocketBytePacket = Nothing
                 SyncLock _receivingPackets
+                    Stats.PacketsReceiving = _receivingPackets.Count
+                    Stats.PacketsSending = _sendingPackets.Count
+
                     For Each pkt In _receivingPackets
                         If pkt.State.TransmitComplete Then
-                            removePacket = pkt
-                        ElseIf (now - pkt.State.TransmitStartTime).TotalMilliseconds > pkt.Settings.SendTimeoutMs Then
+                            '  removePacket = pkt
+                        ElseIf (Now - pkt.State.TransmitStartTime).TotalMilliseconds > pkt.Settings.SendTimeoutMs Then
                             removePacket = pkt
                         End If
                     Next
                     If removePacket IsNot Nothing Then
+                        Stats.PacketsReceiveFailed += 1
                         _receivingPackets.Remove(removePacket)
                     End If
                 End SyncLock
             Catch ex As Exception
+
             End Try
             Threading.Thread.Sleep(10)
         Loop
     End Sub
-
-    Private _receiveThreadDelay As TimeSpan = TimeSpan.FromTicks(1)
-    Private _sendPacketDelay As TimeSpan = TimeSpan.FromTicks(1)
 
     Private Sub ReceiveThread()
         Do
             Try
                 If _socket IsNot Nothing AndAlso _socket.Connected Then
                     Dim read = _socket.Receive(_receiveBuffer)
+                    Stats.BytesReceived += read
                     If read > 31 Then
                         Dim operation = _receiveBuffer(0)
                         Dim id = BitConverter.ToUInt64(_receiveBuffer, 2)
@@ -109,10 +120,13 @@ Public Class UDPTransport
                                     For i = 2 To 13
                                         _ackBuffer(i) = _receiveBuffer(i)
                                     Next
+                                    Stats.BytesSent += _ackBuffer.Length
                                     _socket.Send(_ackBuffer)
                                 End SyncLock
 
                                 If pkt.State.TransmitComplete Then
+                                    _receivingPackets.Remove(pkt)
+                                    Stats.PacketsReceived += 1
                                     RaiseEvent ReceivedPacket(pkt)
                                 End If
                             Case 2
@@ -122,6 +136,13 @@ Public Class UDPTransport
                                         If pkt.Parts(partIndex).Transmitted = False Then
                                             pkt.TransmittedCount += 1
                                             pkt.Parts(partIndex).Transmitted = True
+                                            Dim delay = (Now - pkt.Parts(partIndex).SendTime).TotalMilliseconds
+                                            If AverageTransmitTime = 0 Then
+                                                _AverageTransmitTime = delay
+                                            Else
+                                                Dim koeff = 0.1
+                                                _AverageTransmitTime = _AverageTransmitTime * (1 - koeff) + delay * koeff
+                                            End If
                                             Exit For
                                         End If
                                     End If
@@ -147,9 +168,6 @@ Public Class UDPTransport
             Return _socket.Connected
         End Get
     End Property
-
-    Public Event ReceivedPacket(packet As BytePacket) Implements IPacketTransport.ReceivedPacket
-    Public Event SentPacket(packet As BytePacket) Implements IPacketTransport.SentPacket
 
     Public Sub Close() Implements IPacketTransport.Close
         Try
@@ -190,53 +208,76 @@ Public Class UDPTransport
     End Sub
 
     Public Sub SendPacket(packet As BytePacket) Implements IPacketTransport.SendPacket
+        If packet.Settings Is Nothing Then packet.Settings = DefaultSettings
+
         Dim spacket = PrepareSocketBytePacket(packet)
+        spacket.State.TransmitComplete = False
+        spacket.State.TransmitProgress = 0
+        spacket.State.TransmitStarted = True
+        spacket.State.TransmitStartTime = Now
+
         _sendingPackets.Add(spacket)
 
         Dim started = Now
         Dim sent = 0
         Dim transmitted = 0
+        Dim retransmits = 0
 
         Do While transmitted < spacket.Parts.Count And (Now - started).TotalMilliseconds < spacket.Settings.SendTimeoutMs
             transmitted = spacket.TransmittedCount
             Dim noAck = sent - transmitted
-            If noAck < 1 And sent < spacket.Parts.Count Then
-                SendPart(spacket, transmitted)
+            If noAck < spacket.Settings.AckWaitWindow And sent < spacket.Parts.Count Then
+                SendPart(spacket, sent)
                 spacket.State.TransmitProgress = transmitted / spacket.Parts.Count
                 sent += 1
             Else
                 Threading.Thread.Sleep(_sendPacketDelay)
             End If
+            If packet.Settings.MaxAllowedRetransmits > 0 Then
+                'find lost packets
+                For i = 0 To spacket.Parts.Count - 1
+                    Dim part = spacket.Parts(i)
+                    If part.Sent = True AndAlso part.Transmitted = False AndAlso (Now - part.SendTime).TotalMilliseconds > AverageTransmitTime * spacket.Settings.RetransmitTimeoutMultiplier Then
+                        If packet.Settings.MaxAllowedRetransmits > part.Retransmits Then
+                            part.Retransmits += 1
+                            retransmits += 1
+                            SendPart(spacket, i)
+                        End If
+                    End If
+                Next
+            End If
         Loop
 
+        spacket.State.RetransmitCount = retransmits
+        Stats.Retransmits += retransmits
+
+        spacket.State.TransmitFinishTime = Now
         _sendingPackets.Remove(spacket)
         If transmitted = spacket.Parts.Count Then
             spacket.State.TransmitProgress = 1
             spacket.State.TransmitComplete = True
+            Stats.PacketsSent += 1
         Else
+            Stats.PacketsSendFailed += 1
             Throw New Exception("Transmit incomplete, timeout, only " + transmitted.ToString + " parts from " + spacket.Parts.Count.ToString + " transmitted")
         End If
     End Sub
 
     Private Function PrepareSocketBytePacket(packet As BytePacket) As SocketBytePacket
+        If packet.Settings Is Nothing Then packet.Settings = DefaultSettings
+
         Dim spacket As New SocketBytePacket(packet)
         spacket.PacketID = _rnd.Next
 
-        Dim partSize = packet.Settings.PartSize
-        Dim parts As Integer = Math.Ceiling(packet.Bytes.LongLength / partSize)
+        Dim parts As Integer = Math.Ceiling(packet.Bytes.LongLength / packet.Settings.PartSize)
         For i = 0 To parts - 1
             Dim part As New SocketBytePacket.Part
-            part.Offset = i * partSize
-            part.Length = partSize
+            part.Offset = i * packet.Settings.PartSize
+            part.Length = packet.Settings.PartSize
             spacket.Parts.Add(part)
         Next
         Dim lastPart = spacket.Parts.Last
         lastPart.Length = packet.Bytes.LongLength - lastPart.Offset
-
-        spacket.State.TransmitComplete = False
-        spacket.State.TransmitProgress = 0
-        spacket.State.TransmitStarted = True
-        spacket.State.TransmitStartTime = Now
 
         Return spacket
     End Function
@@ -267,11 +308,12 @@ Public Class UDPTransport
             Next
 
             Array.Copy(packet.Bytes, part.Offset, _sendBuffer, 32, part.Length)
+            part.SendTime = Now
+            Stats.BytesSent += part.Length + 32
             _socket.Send(_sendBuffer, part.Length + 32, SocketFlags.None)
+            part.Sent = True
         End SyncLock
     End Sub
-
-
 
 #Region "IDisposable Support"
     Private disposedValue As Boolean

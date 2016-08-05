@@ -1,5 +1,6 @@
 ﻿Imports System.Net.Sockets
 Imports System.Net
+Imports Bwl.Network.Transport
 
 ''' <summary>
 ''' UDP-base Packet Transport with only protocol-based features. Packet length must be less than 64k, no acknowledgments, only async sending.
@@ -9,6 +10,8 @@ Public Class UDPTransportSimple
     Implements IPacketTransport, IDisposable
     Public Event ReceivedPacket(packet As BytePacket) Implements IPacketTransport.ReceivedPacket
     Public Event SentPacket(packet As BytePacket) Implements IPacketTransport.SentPacket
+    Public Property DefaultSettings As New BytePacketSettings Implements IPacketTransport.DefaultSettings
+    Public ReadOnly Property Stats As New PacketTransportStats Implements IPacketTransport.Stats
 
     Private _socket As Socket
     Private _receiveThread As New Threading.Thread(AddressOf ReceiveThread)

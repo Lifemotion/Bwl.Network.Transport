@@ -4,7 +4,17 @@
     Sub Main()
         t1.Open("20.20.25.80:3066:8066", "")
         Do
-            Threading.Thread.Sleep(1)
+            Threading.Thread.Sleep(1000)
+            Console.Clear()
+            Console.WriteLine("BytesReceived        : " + t1.Stats.BytesReceived.ToString("0 000 000"))
+            Console.WriteLine("BytesSent            : " + t1.Stats.BytesSent.ToString("0 000 000"))
+            Console.WriteLine("PacketsReceived      : " + t1.Stats.PacketsReceived.ToString("0 000"))
+            Console.WriteLine("PacketsReceiveFailed : " + t1.Stats.PacketsReceiveFailed.ToString("0 000"))
+            Console.WriteLine("PacketsReceiving     : " + t1.Stats.PacketsReceiving.ToString("0"))
+            Console.WriteLine("PacketsSent          : " + t1.Stats.PacketsSent.ToString("0 000"))
+            Console.WriteLine("PacketsSendFailed    : " + t1.Stats.PacketsSendFailed.ToString("0 000"))
+            Console.WriteLine("PacketsSending       : " + t1.Stats.PacketsSending.ToString("0"))
+            Console.WriteLine("Retransmits          : " + t1.Stats.Retransmits.ToString("0 000"))
         Loop
     End Sub
 

@@ -1,6 +1,6 @@
 ﻿Public Class BytePacket
     Public Property Bytes As Byte()
-    Public Property Settings As New BytePacketSettings
+    Public Property Settings As BytePacketSettings
     Public ReadOnly Property State As New BytePacketState
 
     Public Sub New()

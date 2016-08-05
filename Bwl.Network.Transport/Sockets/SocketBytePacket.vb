@@ -4,6 +4,9 @@
         Public Property Offset As Int32
         Public Property Length As Int32
         Public Property Transmitted As Boolean
+        Public Property Sent As Boolean
+        Public Property Retransmits As Integer
+        Public Property SendTime As DateTime
     End Class
 
     Public ReadOnly Property Parts As New List(Of Part)
