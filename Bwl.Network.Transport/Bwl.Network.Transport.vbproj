@@ -90,9 +90,12 @@
     <Compile Include="Packet\BytePacketSettings.vb" />
     <Compile Include="Packet\BytePacketState.vb" />
     <Compile Include="Sockets\SocketBytePacket.vb" />
-    <Compile Include="Interfaces\PacketTransportStats.vb" />
-    <Compile Include="Sockets\UDPTransportSimple.vb" />
-    <Compile Include="Sockets\UDPTransport.vb" />
+    <Compile Include="Common\PacketTransportStats.vb" />
+    <Compile Include="Interfaces\IPortListener.vb" />
+    <Compile Include="Sockets\TCP\TCPServer.vb" />
+    <Compile Include="Sockets\TCP\TCPTransport.vb" />
+    <Compile Include="Sockets\UDP\UDPTransportSimple.vb" />
+    <Compile Include="Sockets\UDP\UDPTransport.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="My Project\Resources.resx">
