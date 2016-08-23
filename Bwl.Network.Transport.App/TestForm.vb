@@ -11,6 +11,7 @@ Public Class TestForm
     Private _localTcpServer As New TCPServer(8077)
     Private _localTcpClient1 As New TCPTransport
     Private _localTcpClient2 As New TCPTransport
+    Private _farTcpClient2 As New TCPTransport
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         _local_sender.Open("localhost:3055:8055", "")
@@ -18,8 +19,10 @@ Public Class TestForm
 
         '  _localresponder_sender.Open("localhost:8066:3066", "")
         _farresponder_sender.Open("20.20.25.20:8066:3066", "")
-        _localTcpClient1.Open("localhost:8077", "")
-        _localTcpClient2.Open("localhost:8099", "")
+        '_localTcpClient1.Open("localhost:8077", "")
+        '  _localTcpClient2.Open("localhost:8099", "ignoreerrors")
+        '_farTcpClient2.Open("20.20.25.20:8099", "")
+        _farTcpClient2.Open("20.20.25.10:8077", "")
     End Sub
 
     Private Function PrepareData() As Byte()
@@ -79,6 +82,13 @@ Public Class TestForm
     Private Sub Button5_Click(sender As Object, e As EventArgs) Handles Button5.Click
         _sentPacket = New BytePacket(PrepareData, New BytePacketSettings With {.AckWaitWindow = 1})
         _localTcpClient2.SendPacket(_sentPacket)
+        MsgBox("Size: " + (_sentPacket.Bytes.Length / 1024 / 1024).ToString("0.000") + " mb, send time: " + (_sentPacket.State.TransmitFinishTime - _sentPacket.State.TransmitStartTime).TotalMilliseconds.ToString + " ms")
+
+    End Sub
+
+    Private Sub Button6_Click(sender As Object, e As EventArgs) Handles Button6.Click
+        _sentPacket = New BytePacket(PrepareData, New BytePacketSettings With {.AckWaitWindow = 1})
+        _farTcpClient2.SendPacket(_sentPacket)
         MsgBox("Size: " + (_sentPacket.Bytes.Length / 1024 / 1024).ToString("0.000") + " mb, send time: " + (_sentPacket.State.TransmitFinishTime - _sentPacket.State.TransmitStartTime).TotalMilliseconds.ToString + " ms")
 
     End Sub

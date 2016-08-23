@@ -42,6 +42,10 @@ Public Class TCPTransport
         _cleanThread.Name = "UDPTransport_CleanThread"
         _cleanThread.IsBackground = True
         _cleanThread.Start()
+
+        DefaultSettings.AckWaitWindow = 200
+        DefaultSettings.MaxAllowedRetransmits = 0
+        DefaultSettings.PartSize = 1024 * 32
     End Sub
 
     Private Function GetReceivingPacket(id As ULong, partCount As Integer, totalBytes As Integer) As SocketBytePacket
@@ -189,6 +193,7 @@ Public Class TCPTransport
                     End If
                 End If
             Catch ex As Exception
+                Stop
             End Try
             Threading.Thread.Sleep(_receiveThreadDelay)
         Loop
@@ -222,7 +227,9 @@ Public Class TCPTransport
         If IsNumeric(parts(1)) = False Then Throw New Exception("Address has wrong format! Must be remote_hostname:remote_port or remote_hostname:remote_port:local_port")
 
         _socket = New Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
-
+        _socket.NoDelay = True
+        _socket.ReceiveBufferSize = 1024 * 128
+        _socket.SendBufferSize = 1024 * 128
         If parts.Length = 3 Then
             If IsNumeric(parts(2)) = False Then Throw New Exception("Address has wrong format! Must be remote_hostname:remote_port:local_port")
             Dim locport = CInt(parts(2))
@@ -231,7 +238,12 @@ Public Class TCPTransport
         If parts(0) = "*" Then
             '  _socket.Connect(New IPEndPoint(IPAddress.Broadcast, CInt(parts(1))))
         Else
-            _socket.Connect(parts(0), CInt(parts(1)))
+
+            Try
+                _socket.Connect(parts(0), CInt(parts(1)))
+            Catch ex As Exception
+                If options.Contains("ignoreerrors") = False Then Throw ex
+            End Try
         End If
     End Sub
 

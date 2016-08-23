@@ -12,7 +12,8 @@ Public Class TCPServer
             Try
                 If _listener.Pending Then
                     Dim sck = _listener.AcceptSocket
-                    Dim transport As New TCPTransport(sck)
+                    sck.NoDelay = True
+                    Dim Transport As New TCPTransport(sck)
                     RaiseEvent NewConnection(Me, transport)
                 End If
             Catch ex As Exception
