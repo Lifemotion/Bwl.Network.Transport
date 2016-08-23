@@ -3,7 +3,7 @@ Imports System.Net
 Imports Bwl.Network.Transport
 
 ''' <summary>
-''' UDP-base Packet Transport with big packets support, acknowledgments, retransmits, sync or async sending.
+''' UDP-based Packet Transport with big packets support, acknowledgments, retransmits, sync or async sending.
 ''' If SendPacket completed (no exception), it means packet fully sent and fully received by other side.
 ''' </summary>
 Public Class UDPTransport
@@ -28,7 +28,17 @@ Public Class UDPTransport
     Private _receiveThreadDelay As TimeSpan = TimeSpan.FromTicks(1)
     Private _sendPacketDelay As TimeSpan = TimeSpan.FromTicks(1)
 
+    Private Shared _sharedID As Long
+    Private Shared _sharedIDSync As New Object
+
+    Public ReadOnly Property ID As Long Implements IPacketTransport.ID
+
     Public Sub New()
+        SyncLock _sharedIDSync
+            _sharedID += 1
+            ID = _sharedID
+        End SyncLock
+
         _receiveThread.Name = "UDPTransport_ReceiveThread"
         _receiveThread.Start()
 
@@ -280,6 +290,27 @@ Public Class UDPTransport
         lastPart.Length = packet.Bytes.LongLength - lastPart.Offset
 
         Return spacket
+    End Function
+
+    Public Function Ping(maximumTimeoutMs As Integer) As Integer Implements IPacketTransport.Ping
+        Dim pkt As New BytePacket({}, New BytePacketSettings With {.SendTimeoutMs = maximumTimeoutMs})
+        Try
+            Dim startTime As DateTime
+            Dim finishTime As DateTime
+            SyncLock _sendBuffer
+                startTime = Now
+                For i = 0 To 31
+                    _sendBuffer(i) = 0
+                Next
+                _sendBuffer(0) = 3 'ping
+                Stats.BytesSent += 32
+                _socket.Send(_sendBuffer, 32, SocketFlags.None)
+                startTime = finishTime
+            End SyncLock
+            Return (startTime - finishTime).TotalMilliseconds
+        Catch ex As Exception
+            Return -1
+        End Try
     End Function
 
     Private Sub SendPart(packet As SocketBytePacket, partIndex As Integer)

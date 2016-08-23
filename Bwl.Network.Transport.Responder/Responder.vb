@@ -18,10 +18,12 @@ Module Responder
             Console.WriteLine("PacketsSendFailed    : " + t1.Stats.PacketsSendFailed.ToString("0 000"))
             Console.WriteLine("PacketsSending       : " + t1.Stats.PacketsSending.ToString("0"))
             Console.WriteLine("Retransmits          : " + t1.Stats.Retransmits.ToString("0 000"))
+            Console.WriteLine("")
+            Console.WriteLine("TcpClients           : " + t2.ActiveConnections.Length.ToString)
         Loop
     End Sub
 
-    Private Sub t2_NewConnection(server As TCPServer, transport As TCPTransport) Handles t2.NewConnection
+    Private Sub t2_NewConnection(server As TCPPortListener, transport As TCPTransport) Handles t2.NewConnection
         Console.WriteLine("NewConnection")
         AddHandler transport.ReceivedPacket, Sub(packet As BytePacket)
                                                  Dim b = 1

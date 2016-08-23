@@ -92,6 +92,7 @@
     <Compile Include="Sockets\SocketBytePacket.vb" />
     <Compile Include="Common\PacketTransportStats.vb" />
     <Compile Include="Interfaces\IPortListener.vb" />
+    <Compile Include="Sockets\TCP\TCPPortListener.vb" />
     <Compile Include="Sockets\TCP\TCPServer.vb" />
     <Compile Include="Sockets\TCP\TCPTransport.vb" />
     <Compile Include="Sockets\UDP\UDPTransportSimple.vb" />

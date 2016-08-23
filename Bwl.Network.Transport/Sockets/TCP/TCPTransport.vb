@@ -3,38 +3,63 @@ Imports System.Net
 Imports Bwl.Network.Transport
 
 ''' <summary>
-''' UDP-base Packet Transport with big packets support, sync or async sending.
+''' TCP-based Packet Transport with big packets support, sync or async sending.
 ''' If SendPacket completed (no exception), it means packet fully sent and fully received by other side.
 ''' </summary>
 Public Class TCPTransport
     Implements IPacketTransport, IDisposable
+
+    Public Class TCPTransportParameters
+        Public Property DefaultPartSize As Integer = 1024 * 61
+        Public Property BuffersSize As Integer = 1024 * 256
+        Public Property UseReceiverThreadDelays As Boolean = True
+    End Class
+
     Public Event ReceivedPacket(packet As BytePacket) Implements IPacketTransport.ReceivedPacket
     Public Event SentPacket(packet As BytePacket) Implements IPacketTransport.SentPacket
-    Public ReadOnly Property AverageTransmitTime As Integer
     Public Property DefaultSettings As New BytePacketSettings Implements IPacketTransport.DefaultSettings
     Public ReadOnly Property Stats As New PacketTransportStats Implements IPacketTransport.Stats
 
+    Private Const _headerSize As Integer = 36
     Private _socket As Socket
     Private _receiveThread As New Threading.Thread(AddressOf ReceiveThread)
-    Private _receiveBodyBuffer(65535) As Byte
-    Private _receiveHeadBuffer(35) As Byte
+    Private _receiveBodyBuffer() As Byte
+    Private _receiveHeadBuffer(_headerSize - 1) As Byte
 
-    Private _ackBuffer(35) As Byte
-    Private _sendBuffer(65535 + 35) As Byte
+    Private _sendBuffer() As Byte
     Private _rnd As New Random
 
     Private _cleanThread As New Threading.Thread(AddressOf CleanThread)
 
     Private _receivingPackets As New List(Of SocketBytePacket)
     Private _sendingPackets As New List(Of SocketBytePacket)
-    Private _receiveThreadDelay As TimeSpan = TimeSpan.FromTicks(1)
-    Private _sendPacketDelay As TimeSpan = TimeSpan.FromTicks(1)
+    Private _parameters As TCPTransportParameters
 
     Public Sub New()
-        Me.New(Nothing)
+        Me.New(Nothing, New TCPTransportParameters)
     End Sub
 
-    Public Sub New(socket As Socket)
+    Private Shared _sharedID As Long
+    Private Shared _sharedIDSync As New Object
+
+    Public ReadOnly Property ID As Long Implements IPacketTransport.ID
+
+    Private Sub SetupSocket(socket As Socket)
+        If socket IsNot Nothing Then
+            socket.NoDelay = True
+            socket.Blocking = True
+            If socket.ReceiveBufferSize <> _receiveBodyBuffer.Length Then socket.ReceiveBufferSize = _receiveBodyBuffer.Length
+            If socket.SendBufferSize <> _sendBuffer.Length Then socket.SendBufferSize = _sendBuffer.Length
+        End If
+    End Sub
+
+    Public Sub New(socket As Socket, parameters As TCPTransportParameters)
+        SyncLock _sharedIDSync
+            _sharedID += 1
+            ID = _sharedID
+        End SyncLock
+
+        _parameters = parameters
         _socket = socket
         _receiveThread.Name = "UDPTransport_ReceiveThread"
         _receiveThread.Start()
@@ -43,9 +68,14 @@ Public Class TCPTransport
         _cleanThread.IsBackground = True
         _cleanThread.Start()
 
-        DefaultSettings.AckWaitWindow = 200
+        ReDim _receiveBodyBuffer(_parameters.BuffersSize - 1)
+        ReDim _sendBuffer(_parameters.BuffersSize - 1)
+
+        SetupSocket(_socket)
+
+        DefaultSettings.AckWaitWindow = 1
         DefaultSettings.MaxAllowedRetransmits = 0
-        DefaultSettings.PartSize = 1024 * 32
+        DefaultSettings.PartSize = _parameters.DefaultPartSize
     End Sub
 
     Private Function GetReceivingPacket(id As ULong, partCount As Integer, totalBytes As Integer) As SocketBytePacket
@@ -103,7 +133,7 @@ Public Class TCPTransport
             Try
                 If _socket IsNot Nothing AndAlso _socket.Connected Then
                     If Not receivingBody Then
-                        If _socket.Available >= 36 Then
+                        If _socket.Available >= _headerSize Then
                             _socket.Receive(_receiveHeadBuffer)
                             'check sync
                             If _receiveHeadBuffer(30) = 45 And
@@ -123,24 +153,8 @@ Public Class TCPTransport
                                         total = BitConverter.ToInt32(_receiveHeadBuffer, 26)
                                         receivingPacket = GetReceivingPacket(id, partCount, total)
                                         receivingBody = True
-                                    Case 2
-                                        partIndex = BitConverter.ToInt32(_receiveHeadBuffer, 10)
-                                        For Each pkt In _sendingPackets
-                                            If pkt.PacketID = id Then
-                                                If pkt.Parts(partIndex).Transmitted = False Then
-                                                    pkt.TransmittedCount += 1
-                                                    pkt.Parts(partIndex).Transmitted = True
-                                                    Dim delay = (Now - pkt.Parts(partIndex).SendTime).TotalMilliseconds
-                                                    If AverageTransmitTime = 0 Then
-                                                        _AverageTransmitTime = delay
-                                                    Else
-                                                        Dim koeff = 0.1
-                                                        _AverageTransmitTime = _AverageTransmitTime * (1 - koeff) + delay * koeff
-                                                    End If
-                                                    Exit For
-                                                End If
-                                            End If
-                                        Next
+                                    Case 3
+                                        'ping
                                 End Select
                             Else
                                 'sync fault
@@ -160,7 +174,7 @@ Public Class TCPTransport
                                 part.Transmitted = True
                                 part.Length = length
                                 part.Offset = offset
-                                Array.Copy(_receiveBodyBuffer, 32, receivingPacket.Bytes, part.Offset, part.Length)
+                                Array.Copy(_receiveBodyBuffer, _headerSize, receivingPacket.Bytes, part.Offset, part.Length)
 
                                 If receivingPacket.TransmittedCount = receivingPacket.Parts.Count Then
                                     receivingPacket.State.TransmitStarted = True
@@ -169,20 +183,6 @@ Public Class TCPTransport
                                 Else
                                     receivingPacket.State.TransmitProgress = receivingPacket.TransmittedCount / receivingPacket.Parts.Count
                                 End If
-                                _ackBuffer(0) = 2
-                                _ackBuffer(1) = 0
-                                'sync sequence
-                                _ackBuffer(30) = 45
-                                _ackBuffer(31) = 7
-                                _ackBuffer(32) = 244
-                                _ackBuffer(33) = 0
-                                _ackBuffer(34) = 170
-                                _ackBuffer(35) = 4
-                                For i = 2 To 13
-                                    _ackBuffer(i) = _receiveHeadBuffer(i)
-                                Next
-                                Stats.BytesSent += _ackBuffer.Length
-                                _socket.Send(_ackBuffer)
                             End SyncLock
                             If receivingPacket.State.TransmitComplete Then
                                 _receivingPackets.Remove(receivingPacket)
@@ -195,7 +195,13 @@ Public Class TCPTransport
             Catch ex As Exception
                 Stop
             End Try
-            Threading.Thread.Sleep(_receiveThreadDelay)
+            If _socket Is Nothing OrElse _socket.Connected = False OrElse _socket.Available = 0 Then
+                If _parameters.UseReceiverThreadDelays Then
+                    Threading.Thread.Sleep(1)
+                Else
+                    Threading.Thread.Sleep(0)
+                End If
+            End If
         Loop
     End Sub
 
@@ -227,9 +233,7 @@ Public Class TCPTransport
         If IsNumeric(parts(1)) = False Then Throw New Exception("Address has wrong format! Must be remote_hostname:remote_port or remote_hostname:remote_port:local_port")
 
         _socket = New Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
-        _socket.NoDelay = True
-        _socket.ReceiveBufferSize = 1024 * 128
-        _socket.SendBufferSize = 1024 * 128
+        SetupSocket(_socket)
         If parts.Length = 3 Then
             If IsNumeric(parts(2)) = False Then Throw New Exception("Address has wrong format! Must be remote_hostname:remote_port:local_port")
             Dim locport = CInt(parts(2))
@@ -238,11 +242,10 @@ Public Class TCPTransport
         If parts(0) = "*" Then
             '  _socket.Connect(New IPEndPoint(IPAddress.Broadcast, CInt(parts(1))))
         Else
-
             Try
                 _socket.Connect(parts(0), CInt(parts(1)))
             Catch ex As Exception
-                If options.Contains("ignoreerrors") = False Then Throw ex
+                If options.ToLower.Contains("ignoreerrors") = False Then Throw ex
             End Try
         End If
     End Sub
@@ -267,32 +270,24 @@ Public Class TCPTransport
         spacket.State.TransmitStartTime = Now
 
         _sendingPackets.Add(spacket)
-
         Dim started = Now
         Dim sent = 0
-        Dim transmitted = 0
+        Try
 
-        Do While transmitted < spacket.Parts.Count And (Now - started).TotalMilliseconds < spacket.Settings.SendTimeoutMs
-            transmitted = spacket.TransmittedCount
-            Dim noAck = sent - transmitted
-            If noAck < spacket.Settings.AckWaitWindow And sent < spacket.Parts.Count Then
+            Do While sent < spacket.Parts.Count And (Now - started).TotalMilliseconds < spacket.Settings.SendTimeoutMs
                 SendPart(spacket, sent)
-                spacket.State.TransmitProgress = transmitted / spacket.Parts.Count
+                spacket.State.TransmitProgress = sent / spacket.Parts.Count
                 sent += 1
-            Else
-                Threading.Thread.Sleep(_sendPacketDelay)
-            End If
-        Loop
-        spacket.State.TransmitFinishTime = Now
-        _sendingPackets.Remove(spacket)
-        If transmitted = spacket.Parts.Count Then
+            Loop
+            _sendingPackets.Remove(spacket)
+            spacket.State.TransmitFinishTime = Now
             spacket.State.TransmitProgress = 1
             spacket.State.TransmitComplete = True
             Stats.PacketsSent += 1
-        Else
+        Catch ex As Exception
             Stats.PacketsSendFailed += 1
-            Throw New Exception("Transmit incomplete, timeout, only " + transmitted.ToString + " parts from " + spacket.Parts.Count.ToString + " transmitted")
-        End If
+            Throw New Exception("Transmit incomplete, timeout, only " + sent.ToString + " parts from " + spacket.Parts.Count.ToString + " transmitted")
+        End Try
     End Sub
 
     Private Function PrepareSocketBytePacket(packet As BytePacket) As SocketBytePacket
@@ -308,6 +303,7 @@ Public Class TCPTransport
             part.Length = packet.Settings.PartSize
             spacket.Parts.Add(part)
         Next
+
         Dim lastPart = spacket.Parts.Last
         lastPart.Length = packet.Bytes.LongLength - lastPart.Offset
 
@@ -347,13 +343,42 @@ Public Class TCPTransport
             _sendBuffer(34) = 170
             _sendBuffer(35) = 4
 
-            Array.Copy(packet.Bytes, part.Offset, _sendBuffer, 36, part.Length)
+            Array.Copy(packet.Bytes, part.Offset, _sendBuffer, _headerSize, part.Length)
             part.SendTime = Now
-            Stats.BytesSent += part.Length + 36
-            _socket.Send(_sendBuffer, part.Length + 36, SocketFlags.None)
+            Stats.BytesSent += part.Length + _headerSize
+            _socket.Send(_sendBuffer, part.Length + _headerSize, SocketFlags.None)
             part.Sent = True
+            part.Transmitted = True
         End SyncLock
     End Sub
+
+    Public Function Ping(maximumTimeoutMs As Integer) As Integer Implements IPacketTransport.Ping
+        Try
+            Dim startTime As DateTime
+            Dim finishTime As DateTime
+            SyncLock _sendBuffer
+                startTime = Now
+                For i = 0 To _headerSize - 1
+                    _sendBuffer(i) = 0
+                Next
+                _sendBuffer(0) = 3 'ping
+                'sync sequence
+                _sendBuffer(30) = 45
+                _sendBuffer(31) = 7
+                _sendBuffer(32) = 244
+                _sendBuffer(33) = 0
+                _sendBuffer(34) = 170
+                _sendBuffer(35) = 4
+                Stats.BytesSent += 36
+                Dim send = _socket.Send(_sendBuffer, 36, SocketFlags.None)
+                '_socket.Send(_sendBuffer, 36, SocketFlags.None)
+                finishTime = Now
+            End SyncLock
+            Return (finishTime - startTime).TotalMilliseconds + 1
+        Catch ex As Exception
+            Return -1
+        End Try
+    End Function
 
 #Region "IDisposable Support"
     Private disposedValue As Boolean

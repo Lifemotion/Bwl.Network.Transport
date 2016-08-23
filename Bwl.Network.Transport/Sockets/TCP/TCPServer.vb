@@ -1,33 +1,20 @@
-﻿Imports System.Net.Sockets
-Imports System.Net
+﻿Public Class TCPServer
+    Inherits TCPPortListener
 
-Public Class TCPServer
-    Implements IPortListener
-    Private _listener As TcpListener
-    Private _listenThread As New Threading.Thread(AddressOf ListenThread)
-    Public Event NewConnection(server As IPortListener, transport As IPacketTransport) Implements IPortListener.NewConnection
-
-    Private Sub ListenThread()
-        Do
-            Try
-                If _listener.Pending Then
-                    Dim sck = _listener.AcceptSocket
-                    sck.NoDelay = True
-                    Dim Transport As New TCPTransport(sck)
-                    RaiseEvent NewConnection(Me, transport)
-                End If
-            Catch ex As Exception
-            End Try
-            Threading.Thread.Sleep(10)
-        Loop
-    End Sub
+    Public Event ReceivedPacket(transport As TCPTransport, packet As BytePacket)
+    Public Event SentPacket(transport As TCPTransport, packet As BytePacket)
 
     Public Sub New(port As Integer)
-        _listener = New TcpListener(IPAddress.Any, port)
-        _listener.Start()
-        _listenThread.IsBackground = True
-        _listenThread.Name = "TCPServer"
-        _listenThread.Start()
+        MyBase.New(port)
+        AddHandler Me.NewConnection, AddressOf NewConnectionHandler
     End Sub
 
+    Private Sub NewConnectionHandler(server As IPortListener, transport As IPacketTransport)
+        AddHandler transport.ReceivedPacket, Sub(packet As BytePacket)
+                                                 RaiseEvent ReceivedPacket(transport, packet)
+                                             End Sub
+        AddHandler transport.SentPacket, Sub(packet As BytePacket)
+                                             RaiseEvent SentPacket(transport, packet)
+                                         End Sub
+    End Sub
 End Class

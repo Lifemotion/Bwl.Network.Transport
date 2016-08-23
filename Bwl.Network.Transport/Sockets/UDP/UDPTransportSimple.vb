@@ -3,7 +3,7 @@ Imports System.Net
 Imports Bwl.Network.Transport
 
 ''' <summary>
-''' UDP-base Packet Transport with only protocol-based features. Packet length must be less than 64k, no acknowledgments, only async sending.
+''' UDP-based Packet Transport with only protocol-based features. Packet length must be less than 64k, no acknowledgments, only async sending.
 ''' If SendPacket completed (no exception), it means that packet is sent, but no information about delivery status.
 ''' </summary>
 Public Class UDPTransportSimple
@@ -18,7 +18,17 @@ Public Class UDPTransportSimple
     Private _receiveBuffer(65535) As Byte
     Private _receiveThreadDelay As TimeSpan = TimeSpan.FromTicks(1)
 
+    Private Shared _sharedID As Long
+    Private Shared _sharedIDSync As New Object
+
+    Public ReadOnly Property ID As Long Implements IPacketTransport.ID
+
     Public Sub New()
+        SyncLock _sharedIDSync
+            _sharedID += 1
+            ID = _sharedID
+        End SyncLock
+
         _receiveThread.Name = "UDPTransport_ReceiveThread"
         _receiveThread.Start()
     End Sub
@@ -91,6 +101,16 @@ Public Class UDPTransportSimple
     Public Sub SendPacket(packet As BytePacket) Implements IPacketTransport.SendPacket
         Throw New InvalidOperationException("Sync SendPacket not supported. Use SendPacketAsync")
     End Sub
+
+    Public Function Ping(maximumTimeoutMs As Integer) As Integer Implements IPacketTransport.Ping
+        Dim pkt As New BytePacket({}, New BytePacketSettings With {.SendTimeoutMs = maximumTimeoutMs})
+        Try
+            SendPacket(pkt)
+            Return (pkt.State.TransmitFinishTime - pkt.State.TransmitStartTime).TotalMilliseconds
+        Catch ex As Exception
+            Return -1
+        End Try
+    End Function
 
 #Region "IDisposable Support"
     Private disposedValue As Boolean
