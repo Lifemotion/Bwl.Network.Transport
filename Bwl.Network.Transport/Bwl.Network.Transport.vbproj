@@ -89,6 +89,8 @@
     <Compile Include="Packet\BytePacket.vb" />
     <Compile Include="Packet\BytePacketSettings.vb" />
     <Compile Include="Packet\BytePacketState.vb" />
+    <Compile Include="Packet\MessageBytePacket.vb" />
+    <Compile Include="Packet\MessageBytePartType.vb" />
     <Compile Include="Sockets\SocketBytePacket.vb" />
     <Compile Include="Common\PacketTransportStats.vb" />
     <Compile Include="Interfaces\IPortListener.vb" />

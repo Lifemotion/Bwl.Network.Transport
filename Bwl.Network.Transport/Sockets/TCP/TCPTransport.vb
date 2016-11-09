@@ -174,7 +174,7 @@ Public Class TCPTransport
                                 part.Transmitted = True
                                 part.Length = length
                                 part.Offset = offset
-                                Array.Copy(_receiveBodyBuffer, _headerSize, receivingPacket.Bytes, part.Offset, part.Length)
+                                Array.Copy(_receiveBodyBuffer, 0, receivingPacket.Bytes, part.Offset, part.Length)
 
                                 If receivingPacket.TransmittedCount = receivingPacket.Parts.Count Then
                                     receivingPacket.State.TransmitStarted = True
