@@ -27,7 +27,7 @@
             header.Append(vbTab)
         Next
         Dim ms As New IO.MemoryStream
-        vbNull
+        '   vbNull
         Dim bp As New BytePacket()
         Return bp
     End Function
