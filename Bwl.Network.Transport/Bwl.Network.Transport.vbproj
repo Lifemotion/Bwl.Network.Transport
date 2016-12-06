@@ -89,8 +89,12 @@
     <Compile Include="Packet\BytePacket.vb" />
     <Compile Include="Packet\BytePacketSettings.vb" />
     <Compile Include="Packet\BytePacketState.vb" />
+    <Compile Include="Common\CRC32.vb" />
     <Compile Include="Packet\MessageBytePacket.vb" />
     <Compile Include="Packet\MessageBytePartType.vb" />
+    <Compile Include="Packet\StructuredPacket.vb" />
+    <Compile Include="Packet\StructuredPacketCoders.vb" />
+    <Compile Include="Packet\StructuredPacketPart.vb" />
     <Compile Include="Sockets\SocketBytePacket.vb" />
     <Compile Include="Common\PacketTransportStats.vb" />
     <Compile Include="Interfaces\IPortListener.vb" />
