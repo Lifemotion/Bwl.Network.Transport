@@ -68,7 +68,7 @@ Public Class TCPPortListener
         Loop
     End Sub
 
-    Public ReadOnly Property ActiveConnections As TCPTransport()
+    Public ReadOnly Property ActiveConnections As IPacketTransport() Implements IPortListener.ActiveConnections
         Get
             Return _activeConnections.ToArray
         End Get
