@@ -151,6 +151,7 @@
                 If coder.TypeCode = newCoder.TypeCode Then Throw New Exception("Coder with this TypeCode exists")
                 If coder.Type = newCoder.Type Then Throw New Exception("Coder with this Type exists")
             Next
+            List.Add(newCoder)
         End Sub
 
         Public Shared Function Find(type As Type) As IStructuredPacketCoder

@@ -14,6 +14,13 @@ Public Class TestForm
     Private _farTcpClient2 As New TCPTransport
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        Dim pkt As New StructuredPacket
+        pkt.Add("Int1", 10)
+        pkt.Add("Dbl1", 22.5)
+        pkt.Add("String", "CatsCatsCats")
+        Dim coded = pkt.ToBytePacket
+        Dim decoded As New StructuredPacket(coded)
+
         '_local_sender.Open("localhost:3055:8055", "")
         ' _local_receiver.Open("localhost:8055:3055", "")
 

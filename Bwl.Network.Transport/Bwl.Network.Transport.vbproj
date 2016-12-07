@@ -94,7 +94,6 @@
     <Compile Include="Packet\MessageBytePartType.vb" />
     <Compile Include="Packet\StructuredPacket.vb" />
     <Compile Include="Packet\StructuredPacketCoders.vb" />
-    <Compile Include="Packet\StructuredPacketPart.vb" />
     <Compile Include="Sockets\SocketBytePacket.vb" />
     <Compile Include="Common\PacketTransportStats.vb" />
     <Compile Include="Interfaces\IPortListener.vb" />
