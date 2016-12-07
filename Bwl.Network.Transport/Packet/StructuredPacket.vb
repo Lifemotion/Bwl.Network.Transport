@@ -13,6 +13,12 @@
         Parts.Add(key, value)
     End Sub
 
+    Public Function ToBytePacket(settings As BytePacketSettings) As BytePacket
+        Dim result = ToBytePacket()
+        result.Settings = settings
+        Return result
+    End Function
+
     Public Function ToBytePacket() As BytePacket
         Dim header As New Text.StringBuilder
         Dim codedParts As New List(Of Byte())

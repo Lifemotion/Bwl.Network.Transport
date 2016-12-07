@@ -102,4 +102,20 @@ Public Class TestForm
         MsgBox("Size: " + (_sentPacket.Bytes.Length / 1024 / 1024).ToString("0.000") + " mb, send time: " + st.TotalMilliseconds.ToString + " ms, speed: " + (_sentPacket.Bytes.Length / 1024 / 1024 * 8 / st.TotalSeconds).ToString("0.00") + " Mbit\s")
         MsgBox("Ping: " + _farTcpClient2.Ping(1000).ToString)
     End Sub
+
+    Private Sub Button7_Click(sender As Object, e As EventArgs) Handles Button7.Click
+        Dim pkt As New StructuredPacket
+        pkt.Add("Int1", 10)
+        pkt.Add("Dbl1", 22.5)
+        pkt.Add("String", "CatsCatsCats")
+        pkt.Add("Bytes", PrepareData)
+        Dim codeStart = Now
+        _sentPacket = pkt.ToBytePacket(New BytePacketSettings With {.AckWaitWindow = 1})
+        Dim codeEnd = Now
+        _localTcpClient1.SendPacket(_sentPacket)
+        Dim cd = (codeEnd - codeStart)
+        Dim st = (_sentPacket.State.TransmitFinishTime - _sentPacket.State.TransmitStartTime)
+
+        MsgBox("Size: " + (_sentPacket.Bytes.Length / 1024 / 1024).ToString("0.000") + " mb, send time: " + st.TotalMilliseconds.ToString + " ms, speed: " + (_sentPacket.Bytes.Length / 1024 / 1024 * 8 / st.TotalSeconds).ToString("0.00") + " Mbit\s, code time: " + cd.TotalMilliseconds.ToString + " ms")
+    End Sub
 End Class
