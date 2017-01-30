@@ -69,6 +69,8 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Interfaces\IAddressedTransport.vb" />
+    <Compile Include="Interfaces\IConnection.vb" />
     <Compile Include="Interfaces\IPacketTransport.vb" />
     <Compile Include="Interfaces\IPacketTransportFactory.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
@@ -96,6 +98,8 @@
     <Compile Include="Common\PacketTransportStats.vb" />
     <Compile Include="Interfaces\IPortListener.vb" />
     <Compile Include="Interfaces\IPacketTransportServer.vb" />
+    <Compile Include="Sockets\TCP\TCPAddressedServer.vb" />
+    <Compile Include="Sockets\TCP\TCPAddressedTransport.vb" />
     <Compile Include="Sockets\TCP\TCPPortListener.vb" />
     <Compile Include="Sockets\TCP\TCPServer.vb" />
     <Compile Include="Sockets\TCP\TCPTransport.vb" />

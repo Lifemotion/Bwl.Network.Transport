@@ -17,6 +17,28 @@ Imports Microsoft.VisualStudio.TestTools.UnitTesting
         Assert.AreEqual(True, pkt.EnableCRC)
     End Sub
 
+    <TestMethod()> Public Sub SP_CodeDecodeArrays()
+        Dim pkt As New StructuredPacket
+        Dim arr1 = {"Cat", "Dog"}
+        Dim arr2 = {"Cat", ""}
+        Dim arr3 = {""}
+        Dim arr4 As String() = {}
+        pkt.Add("Arr1", arr1)
+        pkt.Add("Arr2", arr2)
+        pkt.Add("Arr3", arr3)
+        pkt.Add("Arr4", arr4)
+        Dim coded = pkt.ToBytePacket
+        Dim decoded As New StructuredPacket(coded)
+        Assert.IsInstanceOfType(decoded.Parts("Arr1"), GetType(String()))
+        Assert.IsInstanceOfType(decoded.Parts("Arr2"), GetType(String()))
+        Assert.IsInstanceOfType(decoded.Parts("Arr3"), GetType(String()))
+        Assert.IsInstanceOfType(decoded.Parts("Arr4"), GetType(String()))
+        CompareArrays(Of String)(arr1, decoded.Parts("Arr1"))
+        CompareArrays(Of String)(arr2, decoded.Parts("Arr2"))
+        CompareArrays(Of String)(arr3, decoded.Parts("Arr3"))
+        CompareArrays(Of String)(arr4, decoded.Parts("Arr4"))
+    End Sub
+
     <TestMethod()> Public Sub SP_CodeDecode()
         Dim pkt As New StructuredPacket
 
@@ -29,7 +51,7 @@ Imports Microsoft.VisualStudio.TestTools.UnitTesting
         Dim datetime1 As DateTime = Now.ToLocalTime
         Dim datetime2 As DateTime = Now.ToUniversalTime
         Dim bytes = PrepareData(0.1)
-
+        pkt.ReplyToID = 53465465
         pkt.Add("Int1", int1)
         pkt.Add("Long1", long1)
         pkt.Add("Sng1", sng1)
@@ -64,6 +86,8 @@ Imports Microsoft.VisualStudio.TestTools.UnitTesting
         Assert.IsInstanceOfType(decoded.Parts("Date1"), GetType(DateTime))
         Assert.IsInstanceOfType(decoded.Parts("Bytes"), GetType(Byte()))
         Assert.AreEqual(True, decoded.EnableCRC)
+        Assert.AreEqual(pkt.ReplyToID, decoded.ReplyToID)
+        Assert.AreEqual(pkt.MsgID, decoded.MsgID)
         CompareArrays(Of Byte)(bytes, decoded.Parts("Bytes"))
         ' Assert.AreSame()
     End Sub

@@ -25,8 +25,8 @@ Module Responder
 
     Private Sub t2_NewConnection(server As TCPPortListener, transport As TCPTransport) Handles t2.NewConnection
         Console.WriteLine("NewConnection")
-        AddHandler transport.ReceivedPacket, Sub(packet As BytePacket)
-                                                 Dim b = 1
-                                             End Sub
+        AddHandler transport.PacketSent, Sub(packet As BytePacket)
+                                             Dim b = 1
+                                         End Sub
     End Sub
 End Module

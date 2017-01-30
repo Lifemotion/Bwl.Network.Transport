@@ -8,8 +8,8 @@ Imports Bwl.Network.Transport
 ''' </summary>
 Public Class UDPTransportSimple
     Implements IPacketTransport, IDisposable
-    Public Event ReceivedPacket(packet As BytePacket) Implements IPacketTransport.ReceivedPacket
-    Public Event SentPacket(packet As BytePacket) Implements IPacketTransport.SentPacket
+    Public Event PacketReceived(packet As BytePacket) Implements IPacketTransport.PacketReceived
+    Public Event PacketSent(packet As BytePacket) Implements IPacketTransport.PacketSent
     Public Property DefaultSettings As New BytePacketSettings Implements IPacketTransport.DefaultSettings
     Public ReadOnly Property Stats As New PacketTransportStats Implements IPacketTransport.Stats
 
@@ -46,7 +46,7 @@ Public Class UDPTransportSimple
                         pkt.State.TransmitProgress = 1
                         pkt.State.TransmitStarted = 1
                         pkt.State.TransmitStartTime = Now
-                        RaiseEvent ReceivedPacket(pkt)
+                        RaiseEvent PacketReceived(pkt)
                     End If
                 End If
             Catch ex As Exception

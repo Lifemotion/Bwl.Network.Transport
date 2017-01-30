@@ -85,6 +85,8 @@
         End Function
     End Class
 
+
+
     Public Class BooleanCoder
         Implements IStructuredPacketCoder
         Public ReadOnly Property Type As Type = GetType(Boolean) Implements IStructuredPacketCoder.Type
@@ -126,6 +128,36 @@
             Dim result(count - 1) As Byte
             Array.Copy(bytes, index, result, 0, count)
             Return result
+        End Function
+    End Class
+
+    Public Class StringArrayCoder
+        Implements IStructuredPacketCoder
+        Public ReadOnly Property Type As Type = GetType(String()) Implements IStructuredPacketCoder.Type
+        Public ReadOnly Property TypeCode As Byte = 40 Implements IStructuredPacketCoder.TypeCode
+
+        Public Function ToBytes(value As Object) As Byte() Implements IStructuredPacketCoder.ToBytes
+            Dim vals As String() = value
+            Dim ms As New IO.MemoryStream
+            For i = 0 To vals.Length - 1
+                Dim valBytes = CoderTools.StringToBytes(vals(i))
+                ms.Write(valBytes, 0, valBytes.Length)
+                ms.WriteByte(0)
+            Next
+            Dim bytes = ms.ToArray
+            Return bytes
+        End Function
+
+        Public Function ToObject(bytes() As Byte, index As Integer, count As Integer) As Object Implements IStructuredPacketCoder.ToObject
+            Dim result As New List(Of String)
+            Dim start = index
+            For i = index To index + count - 1
+                If bytes(i) = 0 Then
+                    result.Add(CoderTools.BytesToString(bytes, start, i - start))
+                    start = i + 1
+                End If
+            Next
+            Return result.ToArray
         End Function
     End Class
 
@@ -178,6 +210,7 @@
             AddCoder(New DateCoder)
             AddCoder(New ByteArrayCoder)
             AddCoder(New ChecksumCRC32Coder)
+            AddCoder(New StringArrayCoder)
         End Sub
     End Class
 End Namespace

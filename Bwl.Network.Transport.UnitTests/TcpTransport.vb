@@ -65,10 +65,10 @@ Imports Microsoft.VisualStudio.TestTools.UnitTesting
         AddHandler server.SentPacket, Sub(t As IPacketTransport, p As BytePacket)
                                           serverSent = p
                                       End Sub
-        AddHandler client1.ReceivedPacket, Sub(p As BytePacket)
+        AddHandler client1.PacketReceived, Sub(p As BytePacket)
                                                client1Received = p
                                            End Sub
-        AddHandler client1.SentPacket, Sub(p As BytePacket)
+        AddHandler client1.PacketSent, Sub(p As BytePacket)
                                            client1Sent = p
                                        End Sub
         client1.Open("localhost:3041", "")

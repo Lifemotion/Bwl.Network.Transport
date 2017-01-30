@@ -6,6 +6,9 @@
     Public Property AddressTo As String = ""
     Public Property ServiceID As String = ""
     Public Property EnableCRC As Boolean
+    Private Shared _rnd As New Random
+    Public ReadOnly Property MsgID As Integer = _rnd.NextDouble
+    Public Property ReplyToID As Integer = 0
 
     Public Sub Add(key As String, value As Object)
         If key Is Nothing Then Throw New ArgumentNullException("value")
@@ -50,6 +53,8 @@
             Dim crcval = CRC32.Calculate(codedParts)
             AddToHeader(header, crcval.ToString, 253, 0)
         End If
+        Dim ids = MsgID.ToString + ";" + ReplyToID.ToString
+        AddToHeader(header, ids, 249, 0)
         AddToHeader(header, AddressFrom, 250, 0)
         AddToHeader(header, AddressTo, 251, 0)
         AddToHeader(header, ServiceID, 252, 0)
@@ -115,6 +120,10 @@
                 Case 251 : AddressTo = key
                 Case 252 : ServiceID = key
                 Case 253 : crcExpected = CUInt(key) 'crc
+                Case 249
+                    Dim ids = key.Split(";")
+                    MsgID = CInt(ids(0))
+                    ReplyToID = CInt(ids(1))
                 Case 0 To 128
                     Dim coder = StructuredPacketPartCoders.Coders.Find(partType)
                     If coder Is Nothing Then Throw New Exception("Part with key " + key + "  And type " + partType.ToString + "can't be decoded, coder not found")

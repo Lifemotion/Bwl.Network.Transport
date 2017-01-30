@@ -11,10 +11,10 @@
     End Sub
 
     Private Sub NewConnectionHandler(server As IPortListener, transport As IPacketTransport)
-        AddHandler transport.ReceivedPacket, Sub(packet As BytePacket)
+        AddHandler transport.PacketReceived, Sub(packet As BytePacket)
                                                  RaiseEvent ReceivedPacket(transport, packet)
                                              End Sub
-        AddHandler transport.SentPacket, Sub(packet As BytePacket)
+        AddHandler transport.PacketSent, Sub(packet As BytePacket)
                                              RaiseEvent SentPacket(transport, packet)
                                          End Sub
     End Sub
