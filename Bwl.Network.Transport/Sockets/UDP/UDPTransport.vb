@@ -8,11 +8,13 @@ Imports Bwl.Network.Transport
 ''' </summary>
 Public Class UDPTransport
     Implements IPacketTransport, IDisposable
+
     Public Event ReceivedPacket(packet As BytePacket) Implements IPacketTransport.ReceivedPacket
     Public Event SentPacket(packet As BytePacket) Implements IPacketTransport.SentPacket
     Public ReadOnly Property AverageTransmitTime As Integer
     Public Property DefaultSettings As New BytePacketSettings Implements IPacketTransport.DefaultSettings
     Public ReadOnly Property Stats As New PacketTransportStats Implements IPacketTransport.Stats
+    Public Property ServiceName As String Implements IPacketTransport.ServiceName
 
     Private _socket As Socket
     Private _receiveThread As New Threading.Thread(AddressOf ReceiveThread)
@@ -372,5 +374,9 @@ Public Class UDPTransport
     Public Sub Dispose() Implements IDisposable.Dispose
         Dispose(True)
     End Sub
+
+    Public Function SendPacketWaitAnswer(packet As BytePacket, Optional timeout As Single = 500) As BytePacket Implements IPacketTransport.SendPacketWaitAnswer
+        Throw New NotImplementedException()
+    End Function
 #End Region
 End Class

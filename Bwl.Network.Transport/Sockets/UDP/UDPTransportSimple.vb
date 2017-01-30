@@ -12,6 +12,7 @@ Public Class UDPTransportSimple
     Public Event SentPacket(packet As BytePacket) Implements IPacketTransport.SentPacket
     Public Property DefaultSettings As New BytePacketSettings Implements IPacketTransport.DefaultSettings
     Public ReadOnly Property Stats As New PacketTransportStats Implements IPacketTransport.Stats
+    Public Property ServiceName As String Implements IPacketTransport.ServiceName
 
     Private _socket As Socket
     Private _receiveThread As New Threading.Thread(AddressOf ReceiveThread)
@@ -134,5 +135,9 @@ Public Class UDPTransportSimple
     Public Sub Dispose() Implements IDisposable.Dispose
         Dispose(True)
     End Sub
+
+    Public Function SendPacketWaitAnswer(packet As BytePacket, Optional timeout As Single = 500) As BytePacket Implements IPacketTransport.SendPacketWaitAnswer
+        Throw New NotImplementedException()
+    End Function
 #End Region
 End Class

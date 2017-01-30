@@ -1,5 +1,6 @@
 ﻿Imports System.Net.Sockets
 Imports System.Net
+Imports System.Text
 Imports Bwl.Network.Transport
 
 ''' <summary>
@@ -19,6 +20,7 @@ Public Class TCPTransport
     Public Event SentPacket(packet As BytePacket) Implements IPacketTransport.SentPacket
     Public Property DefaultSettings As New BytePacketSettings Implements IPacketTransport.DefaultSettings
     Public ReadOnly Property Stats As New PacketTransportStats Implements IPacketTransport.Stats
+    Public Property ServiceName As String Implements IPacketTransport.ServiceName
 
     Private Const _headerSize As Integer = 36
     Private _socket As Socket
@@ -35,12 +37,16 @@ Public Class TCPTransport
     Private _sendingPackets As New List(Of SocketBytePacket)
     Private _parameters As TCPTransportParameters
 
+    Private _waitingForGuid As String = String.Empty
+    Private _waitingForPacket As BytePacket = Nothing
+
     Public Sub New()
         Me.New(Nothing, New TCPTransportParameters)
     End Sub
 
     Private Shared _sharedID As Long
     Private Shared _sharedIDSync As New Object
+    Private Shared waiterRoot As New Object
 
     Public ReadOnly Property ID As Long Implements IPacketTransport.ID
 
@@ -54,6 +60,7 @@ Public Class TCPTransport
     End Sub
 
     Public Sub New(socket As Socket, parameters As TCPTransportParameters)
+
         SyncLock _sharedIDSync
             _sharedID += 1
             ID = _sharedID
@@ -187,6 +194,16 @@ Public Class TCPTransport
                             If receivingPacket.State.TransmitComplete Then
                                 _receivingPackets.Remove(receivingPacket)
                                 Stats.PacketsReceived += 1
+
+                                If Not String.IsNullOrWhiteSpace(_waitingForGuid) Then
+                                    Dim structPacket = New StructuredPacket(receivingPacket)
+                                    If structPacket.Parts("SyncSendPacketGuid") IsNot Nothing Then
+                                        If _waitingForGuid = Encoding.UTF8.GetString(structPacket.Parts("SyncSendPacketGuid")) Then
+                                            _waitingForPacket = receivingPacket
+                                        End If
+                                    End If
+                                End If
+
                                 RaiseEvent ReceivedPacket(receivingPacket)
                             End If
                         End If
@@ -259,6 +276,27 @@ Public Class TCPTransport
                                            End Sub)
         thread.Start()
     End Sub
+    Public Function SendPacketWaitAnswer(packet As BytePacket, Optional timeout As Single = 500) As BytePacket Implements IPacketTransport.SendPacketWaitAnswer
+        SyncLock waiterRoot
+            Try
+                _waitingForGuid = Guid.NewGuid().ToString()
+                _waitingForPacket = Nothing
+                Dim structPacket = New StructuredPacket(packet)
+                structPacket.Parts("SyncSendPacketGuid") = Encoding.UTF8.GetBytes(_waitingForGuid)
+                SendPacket(structPacket.ToBytePacket())
+                Dim time As Single = Microsoft.VisualBasic.Timer
+
+                Do While _waitingForPacket Is Nothing And Math.Abs(Microsoft.VisualBasic.Timer - time) < timeout
+                    Threading.Thread.Sleep(50)
+                Loop
+                _waitingForGuid = ""
+                Return _waitingForPacket
+            Catch ex As Exception
+                Return Nothing
+            End Try
+        End SyncLock
+
+    End Function
 
     Public Sub SendPacket(packet As BytePacket) Implements IPacketTransport.SendPacket
         If packet.Settings Is Nothing Then packet.Settings = DefaultSettings
