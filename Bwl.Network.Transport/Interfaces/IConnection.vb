@@ -4,6 +4,5 @@
     Sub Close()
     ReadOnly Property Stats As PacketTransportStats
     ReadOnly Property IsConnected As Boolean
-    Function Ping(maximumTimeoutMs As Integer) As Integer
 
 End Interface

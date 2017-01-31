@@ -30,7 +30,7 @@ Public Class RepeaterInterface
             Dim clients = _server.ActiveConnections
             Dim items As New List(Of String)
             For Each client In clients
-                items.Add("#" + client.ID.ToString) '+
+                ' items.Add("#" + client.ID.ToString) '+
                 '  ", [" + client.RegisteredID +
                 '   " @ " + client.RegisteredServiceName + "], " +
                 'client.IPAddress + ", Received\Sent: " +

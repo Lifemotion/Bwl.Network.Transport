@@ -8,7 +8,7 @@ Public Class TestForm
     '   Private _farresponder_sender As New UDPTransport
     Private _sentPacket As BytePacket
 
-    Private _localTcpServer As New TCPPortListener(8077)
+    Private _localTcpServer As New TCPPortListener
     Private _localTcpClient1 As New TCPTransport
     Private _localTcpClient2 As New TCPTransport
     Private _farTcpClient2 As New TCPTransport

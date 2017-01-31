@@ -2,9 +2,10 @@
 
 Module Responder
     Dim t1 As New UDPTransport
-    Dim WithEvents t2 As New TCPServer(8099)
+    Dim WithEvents t2 As New TCPServer
 
     Sub Main()
+        t2.Open(8099, "")
         t1.Open("20.20.25.80:3066:8066", "")
         Do
             Threading.Thread.Sleep(1000)

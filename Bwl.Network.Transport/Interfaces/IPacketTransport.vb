@@ -1,6 +1,6 @@
 ﻿Public Interface IPacketTransport
     Inherits IConnection
-
+    Function Ping(maximumTimeoutMs As Integer) As Integer
     Event PacketReceived(packet As BytePacket)
     Event PacketSent(packet As BytePacket)
     Sub SendPacket(packet As BytePacket)

@@ -98,6 +98,7 @@
     <Compile Include="Common\PacketTransportStats.vb" />
     <Compile Include="Interfaces\IPortListener.vb" />
     <Compile Include="Interfaces\IPacketTransportServer.vb" />
+    <Compile Include="Interfaces\IConnectionInfo.vb" />
     <Compile Include="Sockets\TCP\TCPAddressedServer.vb" />
     <Compile Include="Sockets\TCP\TCPAddressedTransport.vb" />
     <Compile Include="Sockets\TCP\TCPPortListener.vb" />

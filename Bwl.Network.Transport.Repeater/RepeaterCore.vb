@@ -17,7 +17,7 @@ Public Class RepeaterCore
     End Sub
 
     Public Sub Start()
-        _netServer = New TCPServer(_port.Value)
+        _netServer = New TCPServer
         _logger.AddMessage("Created server on " + _port.Value.ToString)
     End Sub
 
