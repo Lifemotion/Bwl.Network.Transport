@@ -1,7 +1,7 @@
 ﻿Imports Bwl.Network.Transport
 
 Module Responder
-    Dim t1 As New UDPTransport
+    Dim t1 As New UDPChannel
     Dim WithEvents t2 As New TCPServer
 
     Sub Main()
@@ -24,9 +24,9 @@ Module Responder
         Loop
     End Sub
 
-    Private Sub t2_NewConnection(server As TCPPortListener, transport As TCPTransport) Handles t2.NewConnection
+    Private Sub t2_NewConnection(server As TCPPortListener, transport As TCPChannel) Handles t2.NewConnection
         Console.WriteLine("NewConnection")
-        AddHandler transport.PacketSent, Sub(t As IPacketTransport, packet As BytePacket)
+        AddHandler transport.PacketSent, Sub(t As IPacketChannel, packet As BytePacket)
                                              Dim b = 1
                                          End Sub
     End Sub

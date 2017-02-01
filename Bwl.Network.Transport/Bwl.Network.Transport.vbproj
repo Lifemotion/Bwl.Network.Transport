@@ -69,12 +69,12 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Interfaces\IAddressedTransport.vb" />
-    <Compile Include="Interfaces\IAddressedTransportFactory.vb" />
+    <Compile Include="Interfaces\IAddressedChannel.vb" />
+    <Compile Include="Interfaces\IAddressedChannelFactory.vb" />
     <Compile Include="Interfaces\IConnectionControl.vb" />
-    <Compile Include="Interfaces\IPacketTransport.vb" />
-    <Compile Include="Interfaces\IPacketTransportFactory.vb" />
-    <Compile Include="Interfaces\IStatsAndSettings.vb" />
+    <Compile Include="Interfaces\IPacketChannel.vb" />
+    <Compile Include="Interfaces\IPacketChannelFactory.vb" />
+    <Compile Include="Interfaces\IPacketStatsAndSettings.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
       <AutoGen>True</AutoGen>
@@ -98,16 +98,17 @@
     <Compile Include="Packet\StructuredPacketCoders.vb" />
     <Compile Include="Sockets\SocketBytePacket.vb" />
     <Compile Include="Common\PacketTransportStats.vb" />
-    <Compile Include="Interfaces\IPortListener.vb" />
-    <Compile Include="Interfaces\IPacketTransportServer.vb" />
-    <Compile Include="Interfaces\IConnectedClient.vb" />
+    <Compile Include="Interfaces\IPacketPortListener.vb" />
+    <Compile Include="Interfaces\IPacketServer.vb" />
+    <Compile Include="Interfaces\IConnectedChannel.vb" />
+    <Compile Include="Sockets\TCP\TCPAddressedRepeater.vb" />
     <Compile Include="Sockets\TCP\TCPAddressedServer.vb" />
-    <Compile Include="Sockets\TCP\TCPAddressedTransport.vb" />
+    <Compile Include="Sockets\TCP\TCPAddressedChannel.vb" />
     <Compile Include="Sockets\TCP\TCPPortListener.vb" />
     <Compile Include="Sockets\TCP\TCPServer.vb" />
-    <Compile Include="Sockets\TCP\TCPTransport.vb" />
-    <Compile Include="Sockets\UDP\UDPTransportSimple.vb" />
-    <Compile Include="Sockets\UDP\UDPTransport.vb" />
+    <Compile Include="Sockets\TCP\TCPChannel.vb" />
+    <Compile Include="Sockets\UDP\UDPChannelSimple.vb" />
+    <Compile Include="Sockets\UDP\UDPChannel.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="My Project\Resources.resx">

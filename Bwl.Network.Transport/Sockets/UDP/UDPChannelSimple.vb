@@ -6,12 +6,12 @@ Imports Bwl.Network.Transport
 ''' UDP-based Packet Transport with only protocol-based features. Packet length must be less than 64k, no acknowledgments, only async sending.
 ''' If SendPacket completed (no exception), it means that packet is sent, but no information about delivery status.
 ''' </summary>
-Public Class UDPTransportSimple
-    Implements IPacketTransport, IDisposable
-    Public Event PacketReceived(transport As IPacketTransport, packet As BytePacket) Implements IPacketTransport.PacketReceived
-    Public Event PacketSent(transport As IPacketTransport, packet As BytePacket) Implements IPacketTransport.PacketSent
-    Public Property DefaultSettings As New BytePacketSettings Implements IPacketTransport.DefaultSettings
-    Public ReadOnly Property Stats As New PacketTransportStats Implements IPacketTransport.Stats
+Public Class UDPChannelSimple
+    Implements IPacketChannel, IDisposable
+    Public Event PacketReceived(transport As IPacketChannel, packet As BytePacket) Implements IPacketChannel.PacketReceived
+    Public Event PacketSent(transport As IPacketChannel, packet As BytePacket) Implements IPacketChannel.PacketSent
+    Public Property DefaultSettings As New BytePacketSettings Implements IPacketChannel.DefaultSettings
+    Public ReadOnly Property Stats As New PacketTransportStats Implements IPacketChannel.Stats
 
     Private _socket As Socket
     Private _receiveThread As New Threading.Thread(AddressOf ReceiveThread)
@@ -21,7 +21,7 @@ Public Class UDPTransportSimple
     Private Shared _sharedID As Long
     Private Shared _sharedIDSync As New Object
 
-    Public ReadOnly Property ID As Long Implements IPacketTransport.ID
+    Public ReadOnly Property ID As Long Implements IPacketChannel.ID
 
     Public Sub New()
         SyncLock _sharedIDSync
@@ -61,14 +61,14 @@ Public Class UDPTransportSimple
         End Get
     End Property
 
-    Public ReadOnly Property IsConnected As Boolean Implements IPacketTransport.IsConnected
+    Public ReadOnly Property IsConnected As Boolean Implements IPacketChannel.IsConnected
         Get
             If _socket Is Nothing Then Return False
             Return _socket.Connected
         End Get
     End Property
 
-    Public Sub Close() Implements IPacketTransport.Close
+    Public Sub Close() Implements IPacketChannel.Close
         Try
             _socket.Close()
         Catch ex As Exception
@@ -76,7 +76,7 @@ Public Class UDPTransportSimple
         _socket = Nothing
     End Sub
 
-    Public Sub Open(address As String, options As String) Implements IPacketTransport.Open
+    Public Sub Open(address As String, options As String) Implements IPacketChannel.Open
         Close()
         Dim parts = address.Split({":"}, StringSplitOptions.RemoveEmptyEntries)
         If parts.Length < 2 Or parts.Length > 3 Then Throw New Exception("Address has wrong format! Must be remote_hostname:remote_port or remote_hostname:remote_port:local_port")
@@ -94,15 +94,15 @@ Public Class UDPTransportSimple
         End If
     End Sub
 
-    Public Sub SendPacketAsync(packet As BytePacket) Implements IPacketTransport.SendPacketAsync
+    Public Sub SendPacketAsync(packet As BytePacket) Implements IPacketChannel.SendPacketAsync
         _socket.Send(packet.Bytes, packet.Bytes.Length, SocketFlags.None)
     End Sub
 
-    Public Sub SendPacket(packet As BytePacket) Implements IPacketTransport.SendPacket
+    Public Sub SendPacket(packet As BytePacket) Implements IPacketChannel.SendPacket
         Throw New InvalidOperationException("Sync SendPacket not supported. Use SendPacketAsync")
     End Sub
 
-    Public Function Ping(maximumTimeoutMs As Integer) As Integer Implements IPacketTransport.Ping
+    Public Function Ping(maximumTimeoutMs As Integer) As Integer Implements IPacketChannel.Ping
         Dim pkt As New BytePacket({}, New BytePacketSettings With {.SendTimeoutMs = maximumTimeoutMs})
         Try
             SendPacket(pkt)

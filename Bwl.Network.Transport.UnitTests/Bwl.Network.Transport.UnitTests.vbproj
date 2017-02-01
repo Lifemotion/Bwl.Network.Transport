@@ -96,8 +96,8 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <Compile Include="TcpAddressedTransport.vb" />
-    <Compile Include="TcpTransport.vb" />
+    <Compile Include="TcpAddressedChannel.vb" />
+    <Compile Include="TcpChannel.vb" />
     <Compile Include="Tools.vb" />
   </ItemGroup>
   <ItemGroup>

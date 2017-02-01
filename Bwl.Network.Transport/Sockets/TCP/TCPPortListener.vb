@@ -3,32 +3,32 @@ Imports System.Net
 Imports Bwl.Network.Transport
 
 Public Class TCPConnection
-    Implements IConnectedClient
-    Public ReadOnly Property TcpTransport As TCPTransport
+    Implements IConnectedChannel
+    Public ReadOnly Property TcpTransport As TCPChannel
 
-    Public ReadOnly Property Transport As IPacketTransport Implements IConnectedClient.Transport
+    Public ReadOnly Property Channel As IPacketChannel Implements IConnectedChannel.Channel
         Get
             Return TcpTransport
         End Get
     End Property
 
-    Public Property Info As Object Implements IConnectedClient.Info
+    Public Property Info As Object Implements IConnectedChannel.Info
 
-    Public Sub New(transport As TCPTransport)
+    Public Sub New(transport As TCPChannel)
         TcpTransport = transport
     End Sub
 End Class
 
 Public Class TCPPortListener
-    Implements IPortListener, IDisposable
+    Implements IPacketPortListener, IDisposable
 
     Private _activeConnections As New List(Of TCPConnection)
     Private _listener As TcpListener
     Private _listenThread As New Threading.Thread(AddressOf ListenThread)
     Private _cleanThread As New Threading.Thread(AddressOf CleanThread)
-    Private _parameters As TCPTransport.TCPTransportParameters
+    Private _parameters As TCPChannel.TCPTransportParameters
 
-    Public Event NewConnection(server As IPortListener, connection As IConnectedClient) Implements IPortListener.NewConnection
+    Public Event NewConnection(server As IPacketPortListener, connection As IConnectedChannel) Implements IPacketPortListener.NewConnection
 
     Private Sub ListenThread()
         Do
@@ -36,7 +36,7 @@ Public Class TCPPortListener
                 Try
                     If _listener.Pending Then
                         Dim sck = _listener.AcceptSocket
-                        Dim conn As New TCPConnection(New TCPTransport(sck, _parameters))
+                        Dim conn As New TCPConnection(New TCPChannel(sck, _parameters))
                         SyncLock _activeConnections
                             _activeConnections.Add(conn)
                         End SyncLock
@@ -67,10 +67,10 @@ Public Class TCPPortListener
     End Sub
 
     Public Sub Open(port As Integer)
-        Open(port, New TCPTransport.TCPTransportParameters)
+        Open(port, New TCPChannel.TCPTransportParameters)
     End Sub
 
-    Public Sub Open(port As Integer, parameters As TCPTransport.TCPTransportParameters)
+    Public Sub Open(port As Integer, parameters As TCPChannel.TCPTransportParameters)
         Close()
         _parameters = parameters
         _listener = New TcpListener(IPAddress.Any, port)
@@ -91,7 +91,7 @@ Public Class TCPPortListener
                     Dim removeTransport As TCPConnection = Nothing
                     SyncLock _activeConnections
                         For Each trn In _activeConnections
-                            If trn.Transport.IsConnected = False Then
+                            If trn.Channel.IsConnected = False Then
                                 removeTransport = trn
                             End If
                         Next
@@ -107,7 +107,7 @@ Public Class TCPPortListener
         Loop
     End Sub
 
-    Public ReadOnly Property ActiveConnections As IConnectedClient() Implements IPortListener.ActiveConnections
+    Public ReadOnly Property ActiveConnections As IConnectedChannel() Implements IPacketPortListener.ActiveConnections
         Get
             Return _activeConnections.ToArray
         End Get

@@ -7,25 +7,25 @@ End Class
 
 Public Class TCPAddressedServer
     Inherits TCPServer
-    Implements IAddressedTransport
+    Implements IAddressedChannel
 
-    Public Event RegisterClientRequest(clientInfo As Dictionary(Of String, String), id As String, method As String, password As String, serviceName As String, options As String, ByRef allowRegister As Boolean, ByRef infoToClient As String) Implements IAddressedTransport.RegisterClientRequest
-    Public Event PacketReceived(transport As IPacketTransport, packet As StructuredPacket) Implements IAddressedTransport.PacketReceived
-    Public Event PacketSent(transport As IPacketTransport, packet As StructuredPacket) Implements IAddressedTransport.PacketSent
+    Public Event RegisterClientRequest(clientInfo As Dictionary(Of String, String), id As String, method As String, password As String, serviceName As String, options As String, ByRef allowRegister As Boolean, ByRef infoToClient As String) Implements IAddressedChannel.RegisterClientRequest
+    Public Event PacketReceived(transport As IPacketChannel, packet As StructuredPacket) Implements IAddressedChannel.PacketReceived
+    Public Event PacketSent(transport As IPacketChannel, packet As StructuredPacket) Implements IAddressedChannel.PacketSent
 
-    Public ReadOnly Property MyID As String = "(Server)" Implements IAddressedTransport.MyID
-    Public ReadOnly Property MyServiceName As String = "" Implements IAddressedTransport.MyServiceName
+    Public ReadOnly Property MyID As String = "(Server)" Implements IAddressedChannel.MyID
+    Public ReadOnly Property MyServiceName As String = "" Implements IAddressedChannel.MyServiceName
 
-    Public ReadOnly Property Stats As New PacketTransportStats Implements IAddressedTransport.Stats
+    Public ReadOnly Property Stats As New PacketTransportStats Implements IAddressedChannel.Stats
 
-    Public Property DefaultSettings As New BytePacketSettings Implements IStatsAndSettings.DefaultSettings
+    Public Property DefaultSettings As New BytePacketSettings Implements IPacketStatsAndSettings.DefaultSettings
     Public Property AllowBroadcastSetting As Boolean = False
 
     Public Sub New()
         AddHandler NewConnection, AddressOf NewConnectionHandler
     End Sub
 
-    Private Sub PacketReceivedHandler(packet As StructuredPacket, transport As IConnectedClient)
+    Private Sub PacketReceivedHandler(packet As StructuredPacket, transport As IConnectedChannel)
         If packet.Parts.ContainsKey("@RegisterMe") Then
             Try
                 Dim id As String = packet.Parts("@RegisterMe")
@@ -46,13 +46,13 @@ Public Class TCPAddressedServer
                 Else
                     response.Add("@RegisterResult", "NotAllowed")
                 End If
-                transport.Transport.SendPacketAsync(response.ToBytePacket)
+                transport.Channel.SendPacketAsync(response.ToBytePacket)
             Catch ex As Exception
                 Dim response As New StructuredPacket(packet)
                 response.Add("@RegisterResult", "Error")
                 response.Add("@RegisterResultMessage", "Unknown error")
                 Try
-                    transport.Transport.SendPacketAsync(response.ToBytePacket)
+                    transport.Channel.SendPacketAsync(response.ToBytePacket)
                 Catch ex1 As Exception
                 End Try
             End Try
@@ -64,44 +64,45 @@ Public Class TCPAddressedServer
                 Dim response As New StructuredPacket(packet)
                 Dim list = GetPeersList(service).ToArray
                 response.Add("@PeersList", list)
-                transport.Transport.SendPacketAsync(response.ToBytePacket)
+                transport.Channel.SendPacketAsync(response.ToBytePacket)
             Catch ex As Exception
             End Try
         End If
     End Sub
 
-    Private Sub NewConnectionHandler(server As IPortListener, connection As IConnectedClient)
-        connection.Transport.DefaultSettings = DefaultSettings
+    Private Sub NewConnectionHandler(server As IPacketPortListener, connection As IConnectedChannel)
+        connection.Channel.DefaultSettings = DefaultSettings
         connection.Info = New TCPClientInfo
-        AddHandler connection.Transport.PacketReceived, Sub(transport As IConnectedClient, packet As BytePacket)
-                                                            Try
-                                                                Dim sbp As New StructuredPacket(packet)
-                                                                PacketReceivedHandler(sbp, connection)
-                                                                RaiseEvent PacketReceived(transport, sbp)
-                                                            Catch ex As Exception
-                                                            End Try
-                                                        End Sub
-        AddHandler connection.Transport.PacketSent, Sub(transport As IConnectedClient, packet As BytePacket)
-                                                        Try
-                                                            Dim sbp As New StructuredPacket(packet)
-                                                            RaiseEvent PacketSent(transport, sbp)
-                                                        Catch ex As Exception
-                                                        End Try
-                                                    End Sub
+        AddHandler connection.Channel.PacketReceived, Sub(transport As IPacketChannel, packet As BytePacket)
+                                                          Try
+                                                              Dim sbp As New StructuredPacket(packet)
+                                                              PacketReceivedHandler(sbp, connection)
+                                                              RaiseEvent PacketReceived(transport, sbp)
+                                                          Catch ex As Exception
+                                                          End Try
+                                                      End Sub
+        AddHandler connection.Channel.PacketSent, Sub(transport As IPacketChannel, packet As BytePacket)
+                                                      Try
+                                                          Dim sbp As New StructuredPacket(packet)
+                                                          RaiseEvent PacketSent(transport, sbp)
+                                                      Catch ex As Exception
+                                                      End Try
+                                                  End Sub
     End Sub
 
-    Public Sub RegisterMe(id As String, password As String, serviceName As String, options As String) Implements IAddressedTransport.RegisterMe
+    Public Sub RegisterMe(id As String, password As String, serviceName As String, options As String) Implements IAddressedChannel.RegisterMe
         _MyID = id
         _MyServiceName = serviceName
     End Sub
 
-    Public Shadows Sub SendPacket(message As StructuredPacket) Implements IAddressedTransport.SendPacket
+    Public Shadows Sub SendPacket(message As StructuredPacket) Implements IAddressedChannel.SendPacket
+        If message.AddressFrom = "" Then message.AddressFrom = MyID
         If message.AddressTo = "" Then
             If AllowBroadcastSetting Then
                 Dim bp = message.ToBytePacket
                 For Each client In ActiveConnections.ToArray
                     Try
-                        client.Transport.SendPacket(bp)
+                        client.Channel.SendPacket(bp)
                     Catch ex As Exception
                     End Try
                 Next
@@ -112,7 +113,7 @@ Public Class TCPAddressedServer
             For Each client In ActiveConnections.ToArray
                 If client.Info.ID.ToLower = message.AddressTo.ToLower Then
                     Dim bp = message.ToBytePacket
-                    client.Transport.SendPacket(bp)
+                    client.Channel.SendPacket(bp)
                     Return
                 End If
             Next
@@ -120,13 +121,13 @@ Public Class TCPAddressedServer
         End If
     End Sub
 
-    Public Shadows Sub SendPacketAsync(message As StructuredPacket) Implements IAddressedTransport.SendPacketAsync
+    Public Shadows Sub SendPacketAsync(message As StructuredPacket) Implements IAddressedChannel.SendPacketAsync
         If message.AddressTo = "" Then
             If AllowBroadcastSetting Then
                 Dim bp = message.ToBytePacket
                 For Each client In ActiveConnections.ToArray
                     Try
-                        client.Transport.SendPacketAsync(bp)
+                        client.Channel.SendPacketAsync(bp)
                     Catch ex As Exception
                     End Try
                 Next
@@ -137,7 +138,7 @@ Public Class TCPAddressedServer
             For Each client In ActiveConnections.ToArray
                 If client.Info.ID.ToLower = message.AddressTo.ToLower Then
                     Dim bp = message.ToBytePacket
-                    client.Transport.SendPacketAsync(bp)
+                    client.Channel.SendPacketAsync(bp)
                     Return
                 End If
             Next
@@ -145,7 +146,7 @@ Public Class TCPAddressedServer
         End If
     End Sub
 
-    Public Function GetPeersList(serviceName As String, Optional timeout As Single = 20) As String() Implements IAddressedTransport.GetPeersList
+    Public Function GetPeersList(serviceName As String, Optional timeout As Single = 20) As String() Implements IAddressedChannel.GetPeersList
         Dim list As New List(Of String)
         If  serviceName = "" Or serviceName = MyServiceName Then list.Add(MyID)
         For Each client In ActiveConnections.ToArray
@@ -159,11 +160,11 @@ Public Class TCPAddressedServer
         Return list.ToArray
     End Function
 
-    Public Function SendPacketWaitAnswer(message As StructuredPacket, Optional timeout As Single = 20) As StructuredPacket Implements IAddressedTransport.SendPacketWaitAnswer
+    Public Function SendPacketWaitAnswer(message As StructuredPacket, Optional timeout As Single = 20) As StructuredPacket Implements IAddressedChannel.SendPacketWaitAnswer
         Throw New NotImplementedException()
     End Function
 
-    Public Function WaitPacket(Optional timeout As Single = 20, Optional pktid As Integer = -1, Optional partKey As String = "") As Object Implements IAddressedTransport.WaitPacket
+    Public Function WaitPacket(Optional timeout As Single = 20, Optional pktid As Integer = -1, Optional partKey As String = "") As Object Implements IAddressedChannel.WaitPacket
         Throw New NotImplementedException()
     End Function
 End Class

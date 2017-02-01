@@ -6,8 +6,8 @@ Imports Bwl.Network.Transport
 ''' TCP-based Packet Transport with big packets support, sync or async sending.
 ''' If SendPacket completed (no exception), it means packet fully sent and fully received by other side.
 ''' </summary>
-Public Class TCPTransport
-    Implements IPacketTransport, IDisposable
+Public Class TCPChannel
+    Implements IPacketChannel, IDisposable
 
     Public Class TCPTransportParameters
         Public Property DefaultPartSize As Integer = 1024 * 61
@@ -15,10 +15,10 @@ Public Class TCPTransport
         Public Property UseReceiverThreadDelays As Boolean = True
     End Class
 
-    Public Event PacketReceived(transport As IPacketTransport, packet As BytePacket) Implements IPacketTransport.PacketReceived
-    Public Event PacketSent(transport As IPacketTransport, packet As BytePacket) Implements IPacketTransport.PacketSent
-    Public Property DefaultSettings As New BytePacketSettings Implements IPacketTransport.DefaultSettings
-    Public ReadOnly Property Stats As New PacketTransportStats Implements IPacketTransport.Stats
+    Public Event PacketReceived(transport As IPacketChannel, packet As BytePacket) Implements IPacketChannel.PacketReceived
+    Public Event PacketSent(transport As IPacketChannel, packet As BytePacket) Implements IPacketChannel.PacketSent
+    Public Property DefaultSettings As New BytePacketSettings Implements IPacketChannel.DefaultSettings
+    Public ReadOnly Property Stats As New PacketTransportStats Implements IPacketChannel.Stats
 
     Private Const _headerSize As Integer = 36
     Private _socket As Socket
@@ -42,7 +42,7 @@ Public Class TCPTransport
     Private Shared _sharedID As Long
     Private Shared _sharedIDSync As New Object
 
-    Public ReadOnly Property ID As Long Implements IPacketTransport.ID
+    Public ReadOnly Property ID As Long Implements IPacketChannel.ID
 
     Private Sub SetupSocket(socket As Socket)
         If socket IsNot Nothing Then
@@ -211,14 +211,14 @@ Public Class TCPTransport
         End Get
     End Property
 
-    Public ReadOnly Property IsConnected As Boolean Implements IPacketTransport.IsConnected
+    Public ReadOnly Property IsConnected As Boolean Implements IPacketChannel.IsConnected
         Get
             If _socket Is Nothing Then Return False
             Return _socket.Connected
         End Get
     End Property
 
-    Public Sub Close() Implements IPacketTransport.Close
+    Public Sub Close() Implements IPacketChannel.Close
         Try
             _socket.Close()
         Catch ex As Exception
@@ -226,7 +226,7 @@ Public Class TCPTransport
         _socket = Nothing
     End Sub
 
-    Public Sub Open(address As String, options As String) Implements IPacketTransport.Open
+    Public Sub Open(address As String, options As String) Implements IPacketChannel.Open
         Close()
         Dim parts = address.Split({":"}, StringSplitOptions.RemoveEmptyEntries)
         If parts.Length < 2 Or parts.Length > 3 Then Throw New Exception("Address has wrong format! Must be remote_hostname:remote_port or remote_hostname:remote_port:local_port")
@@ -250,7 +250,7 @@ Public Class TCPTransport
         End If
     End Sub
 
-    Public Sub SendPacketAsync(packet As BytePacket) Implements IPacketTransport.SendPacketAsync
+    Public Sub SendPacketAsync(packet As BytePacket) Implements IPacketChannel.SendPacketAsync
         Dim thread As New Threading.Thread(Sub()
                                                Try
                                                    SendPacket(packet)
@@ -260,7 +260,7 @@ Public Class TCPTransport
         thread.Start()
     End Sub
 
-    Public Sub SendPacket(packet As BytePacket) Implements IPacketTransport.SendPacket
+    Public Sub SendPacket(packet As BytePacket) Implements IPacketChannel.SendPacket
         If packet.Settings Is Nothing Then packet.Settings = DefaultSettings
 
         Dim spacket = PrepareSocketBytePacket(packet)
@@ -352,7 +352,7 @@ Public Class TCPTransport
         End SyncLock
     End Sub
 
-    Public Function Ping(maximumTimeoutMs As Integer) As Integer Implements IPacketTransport.Ping
+    Public Function Ping(maximumTimeoutMs As Integer) As Integer Implements IPacketChannel.Ping
         Try
             Dim startTime As DateTime
             Dim finishTime As DateTime

@@ -6,13 +6,13 @@ Imports Bwl.Network.Transport
 ''' UDP-based Packet Transport with big packets support, acknowledgments, retransmits, sync or async sending.
 ''' If SendPacket completed (no exception), it means packet fully sent and fully received by other side.
 ''' </summary>
-Public Class UDPTransport
-    Implements IPacketTransport, IDisposable
-    Public Event PacketReceived(transport As IPacketTransport, packet As BytePacket) Implements IPacketTransport.PacketReceived
-    Public Event PacketSent(transport As IPacketTransport, packet As BytePacket) Implements IPacketTransport.PacketSent
+Public Class UDPChannel
+    Implements IPacketChannel, IDisposable
+    Public Event PacketReceived(transport As IPacketChannel, packet As BytePacket) Implements IPacketChannel.PacketReceived
+    Public Event PacketSent(transport As IPacketChannel, packet As BytePacket) Implements IPacketChannel.PacketSent
     Public ReadOnly Property AverageTransmitTime As Integer
-    Public Property DefaultSettings As New BytePacketSettings Implements IPacketTransport.DefaultSettings
-    Public ReadOnly Property Stats As New PacketTransportStats Implements IPacketTransport.Stats
+    Public Property DefaultSettings As New BytePacketSettings Implements IPacketChannel.DefaultSettings
+    Public ReadOnly Property Stats As New PacketTransportStats Implements IPacketChannel.Stats
 
     Private _socket As Socket
     Private _receiveThread As New Threading.Thread(AddressOf ReceiveThread)
@@ -31,7 +31,7 @@ Public Class UDPTransport
     Private Shared _sharedID As Long
     Private Shared _sharedIDSync As New Object
 
-    Public ReadOnly Property ID As Long Implements IPacketTransport.ID
+    Public ReadOnly Property ID As Long Implements IPacketChannel.ID
 
     Public Sub New()
         SyncLock _sharedIDSync
@@ -172,14 +172,14 @@ Public Class UDPTransport
         End Get
     End Property
 
-    Public ReadOnly Property IsConnected As Boolean Implements IPacketTransport.IsConnected
+    Public ReadOnly Property IsConnected As Boolean Implements IPacketChannel.IsConnected
         Get
             If _socket Is Nothing Then Return False
             Return _socket.Connected
         End Get
     End Property
 
-    Public Sub Close() Implements IPacketTransport.Close
+    Public Sub Close() Implements IPacketChannel.Close
         Try
             _socket.Close()
         Catch ex As Exception
@@ -187,7 +187,7 @@ Public Class UDPTransport
         _socket = Nothing
     End Sub
 
-    Public Sub Open(address As String, options As String) Implements IPacketTransport.Open
+    Public Sub Open(address As String, options As String) Implements IPacketChannel.Open
         Close()
         Dim parts = address.Split({":"}, StringSplitOptions.RemoveEmptyEntries)
         If parts.Length < 2 Or parts.Length > 3 Then Throw New Exception("Address has wrong format! Must be remote_hostname:remote_port or remote_hostname:remote_port:local_port")
@@ -207,7 +207,7 @@ Public Class UDPTransport
         End If
     End Sub
 
-    Public Sub SendPacketAsync(packet As BytePacket) Implements IPacketTransport.SendPacketAsync
+    Public Sub SendPacketAsync(packet As BytePacket) Implements IPacketChannel.SendPacketAsync
         Dim thread As New Threading.Thread(Sub()
                                                Try
                                                    SendPacket(packet)
@@ -217,7 +217,7 @@ Public Class UDPTransport
         thread.Start()
     End Sub
 
-    Public Sub SendPacket(packet As BytePacket) Implements IPacketTransport.SendPacket
+    Public Sub SendPacket(packet As BytePacket) Implements IPacketChannel.SendPacket
         If packet.Settings Is Nothing Then packet.Settings = DefaultSettings
 
         Dim spacket = PrepareSocketBytePacket(packet)
@@ -292,7 +292,7 @@ Public Class UDPTransport
         Return spacket
     End Function
 
-    Public Function Ping(maximumTimeoutMs As Integer) As Integer Implements IPacketTransport.Ping
+    Public Function Ping(maximumTimeoutMs As Integer) As Integer Implements IPacketChannel.Ping
         Dim pkt As New BytePacket({}, New BytePacketSettings With {.SendTimeoutMs = maximumTimeoutMs})
         Try
             Dim startTime As DateTime

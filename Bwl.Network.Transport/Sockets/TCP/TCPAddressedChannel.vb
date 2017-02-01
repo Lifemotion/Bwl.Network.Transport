@@ -1,20 +1,20 @@
 ﻿Imports Bwl.Network.Transport
 
-Public Class TCPAddressedTransport
-    Inherits TCPTransport
-    Implements IAddressedTransport
+Public Class TCPAddressedChannel
+    Inherits TCPChannel
+    Implements IAddressedChannel
 
-    Public Event RegisterClientRequest(clientInfo As Dictionary(Of String, String), id As String, method As String, password As String, serviceName As String, options As String, ByRef allowRegister As Boolean, ByRef infoToClient As String) Implements IAddressedTransport.RegisterClientRequest
-    Public Shadows Event PacketReceived(transport As IPacketTransport, packet As StructuredPacket) Implements IAddressedTransport.PacketReceived
-    Public Shadows Event PacketSent(transport As IPacketTransport, packet As StructuredPacket) Implements IAddressedTransport.PacketSent
-    Public ReadOnly Property MyID As String = "" Implements IAddressedTransport.MyID
-    Public ReadOnly Property MyServiceName As String = "" Implements IAddressedTransport.MyServiceName
+    Public Event RegisterClientRequest(clientInfo As Dictionary(Of String, String), id As String, method As String, password As String, serviceName As String, options As String, ByRef allowRegister As Boolean, ByRef infoToClient As String) Implements IAddressedChannel.RegisterClientRequest
+    Public Shadows Event PacketReceived(transport As IPacketChannel, packet As StructuredPacket) Implements IAddressedChannel.PacketReceived
+    Public Shadows Event PacketSent(transport As IPacketChannel, packet As StructuredPacket) Implements IAddressedChannel.PacketSent
+    Public ReadOnly Property MyID As String = "" Implements IAddressedChannel.MyID
+    Public ReadOnly Property MyServiceName As String = "" Implements IAddressedChannel.MyServiceName
 
     Public Sub New()
         AddHandler MyBase.PacketReceived, AddressOf BytePacketReceived
     End Sub
 
-    Private Sub BytePacketReceived(transport As IAddressedTransport, packet As BytePacket)
+    Private Sub BytePacketReceived(transport As IPacketChannel, packet As BytePacket)
         Try
             Dim sbp As New StructuredPacket(packet)
             RaiseEvent PacketReceived(Me, sbp)
@@ -22,7 +22,7 @@ Public Class TCPAddressedTransport
         End Try
     End Sub
 
-    Public Sub RegisterMe(id As String, password As String, serviceName As String, options As String) Implements IAddressedTransport.RegisterMe
+    Public Sub RegisterMe(id As String, password As String, serviceName As String, options As String) Implements IAddressedChannel.RegisterMe
         Dim request As New StructuredPacket
         request.Add("@RegisterMe", id)
         request.Add("@RegisterMethod", "simple")
@@ -38,19 +38,21 @@ Public Class TCPAddressedTransport
         _MyServiceName = serviceName
     End Sub
 
-    Public Shadows Sub SendPacket(message As StructuredPacket) Implements IAddressedTransport.SendPacket
+    Public Shadows Sub SendPacket(message As StructuredPacket) Implements IAddressedChannel.SendPacket
+        If message.AddressFrom = "" Then message.AddressFrom = MyID
         Dim bp = message.ToBytePacket
         MyBase.SendPacket(bp)
         RaiseEvent PacketSent(Me, message)
     End Sub
 
-    Public Shadows Sub SendPacketAsync(message As StructuredPacket) Implements IAddressedTransport.SendPacketAsync
+    Public Shadows Sub SendPacketAsync(message As StructuredPacket) Implements IAddressedChannel.SendPacketAsync
+        If message.AddressFrom = "" Then message.AddressFrom = MyID
         Dim bp = message.ToBytePacket
         MyBase.SendPacketAsync(bp)
         RaiseEvent PacketSent(Me, message)
     End Sub
 
-    Public Function GetPeersList(serviceName As String, Optional timeout As Single = 20) As String() Implements IAddressedTransport.GetPeersList
+    Public Function GetPeersList(serviceName As String, Optional timeout As Single = 20) As String() Implements IAddressedChannel.GetPeersList
         Dim request As New StructuredPacket
         request.Add("@GetPeersList", serviceName)
         Dim response = SendPacketWaitAnswer(request, timeout)
@@ -60,14 +62,14 @@ Public Class TCPAddressedTransport
         Return peersList
     End Function
 
-    Public Function SendPacketWaitAnswer(message As StructuredPacket, Optional timeout As Single = 20) As StructuredPacket Implements IAddressedTransport.SendPacketWaitAnswer
+    Public Function SendPacketWaitAnswer(message As StructuredPacket, Optional timeout As Single = 20) As StructuredPacket Implements IAddressedChannel.SendPacketWaitAnswer
         SendPacketAsync(message)
         Return WaitPacket(timeout, message.MsgID)
     End Function
 
-    Public Function WaitPacket(Optional timeout As Single = 20, Optional answerToId As Integer = -1, Optional partKey As String = "") As Object Implements IAddressedTransport.WaitPacket
+    Public Function WaitPacket(Optional timeout As Single = 20, Optional answerToId As Integer = -1, Optional partKey As String = "") As Object Implements IAddressedChannel.WaitPacket
         Dim received As StructuredPacket = Nothing
-        AddHandler Me.PacketReceived, Sub(transport As IAddressedTransport, packet As StructuredPacket)
+        AddHandler Me.PacketReceived, Sub(transport As IPacketChannel, packet As StructuredPacket)
                                           If packet.ReplyToID = answerToId Then received = packet
                                           If partKey > "" AndAlso packet.Parts.ContainsKey(partKey) Then received = packet
                                           If answerToId = -1 And partKey = "" Then received = packet

@@ -9,9 +9,9 @@ Public Class TestForm
     Private _sentPacket As BytePacket
 
     Private _localTcpServer As New TCPPortListener
-    Private _localTcpClient1 As New TCPTransport
-    Private _localTcpClient2 As New TCPTransport
-    Private _farTcpClient2 As New TCPTransport
+    Private _localTcpClient1 As New TCPChannel
+    Private _localTcpClient2 As New TCPChannel
+    Private _farTcpClient2 As New TCPChannel
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Dim pkt As New StructuredPacket
