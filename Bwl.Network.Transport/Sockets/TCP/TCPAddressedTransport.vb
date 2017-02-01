@@ -5,8 +5,8 @@ Public Class TCPAddressedTransport
     Implements IAddressedTransport
 
     Public Event RegisterClientRequest(clientInfo As Dictionary(Of String, String), id As String, method As String, password As String, serviceName As String, options As String, ByRef allowRegister As Boolean, ByRef infoToClient As String) Implements IAddressedTransport.RegisterClientRequest
-    Public Shadows Event PacketReceived(source As IAddressedTransport, packet As StructuredPacket) Implements IAddressedTransport.PacketReceived
-    Public Shadows Event PacketSent(source As IAddressedTransport, packet As StructuredPacket) Implements IAddressedTransport.PacketSent
+    Public Shadows Event PacketReceived(transport As IPacketTransport, packet As StructuredPacket) Implements IAddressedTransport.PacketReceived
+    Public Shadows Event PacketSent(transport As IPacketTransport, packet As StructuredPacket) Implements IAddressedTransport.PacketSent
     Public ReadOnly Property MyID As String = "" Implements IAddressedTransport.MyID
     Public ReadOnly Property MyServiceName As String = "" Implements IAddressedTransport.MyServiceName
 
@@ -14,7 +14,7 @@ Public Class TCPAddressedTransport
         AddHandler MyBase.PacketReceived, AddressOf BytePacketReceived
     End Sub
 
-    Private Sub BytePacketReceived(packet As BytePacket)
+    Private Sub BytePacketReceived(transport As IAddressedTransport, packet As BytePacket)
         Try
             Dim sbp As New StructuredPacket(packet)
             RaiseEvent PacketReceived(Me, sbp)
@@ -55,8 +55,8 @@ Public Class TCPAddressedTransport
         request.Add("@GetPeersList", serviceName)
         Dim response = SendPacketWaitAnswer(request, timeout)
         If response Is Nothing Then Throw New Exception("GetPeersList: no response")
-        If response.Parts.ContainsKey("PeersList") = False Then Throw New Exception("GetPeersList: no PeersList part")
-        Dim peersList As String() = response.Parts("PeersList")
+        If response.Parts.ContainsKey("@PeersList") = False Then Throw New Exception("GetPeersList: no PeersList part")
+        Dim peersList As String() = response.Parts("@PeersList")
         Return peersList
     End Function
 
@@ -67,7 +67,7 @@ Public Class TCPAddressedTransport
 
     Public Function WaitPacket(Optional timeout As Single = 20, Optional answerToId As Integer = -1, Optional partKey As String = "") As Object Implements IAddressedTransport.WaitPacket
         Dim received As StructuredPacket = Nothing
-        AddHandler Me.PacketReceived, Sub(source As IAddressedTransport, packet As StructuredPacket)
+        AddHandler Me.PacketReceived, Sub(transport As IAddressedTransport, packet As StructuredPacket)
                                           If packet.ReplyToID = answerToId Then received = packet
                                           If partKey > "" AndAlso packet.Parts.ContainsKey(partKey) Then received = packet
                                           If answerToId = -1 And partKey = "" Then received = packet

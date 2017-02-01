@@ -83,6 +83,13 @@
 
     End Sub
 
+    Public Sub New(answerTo As StructuredPacket)
+        AddressFrom = answerTo.AddressTo
+        AddressTo = answerTo.AddressFrom
+        ServiceID = answerTo.ServiceID
+        ReplyToID = answerTo.MsgID
+    End Sub
+
     Public Sub New(bytePacket As BytePacket)
         Me.New(bytePacket.Bytes)
     End Sub

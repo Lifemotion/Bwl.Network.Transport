@@ -8,8 +8,8 @@ Imports Bwl.Network.Transport
 ''' </summary>
 Public Class UDPTransport
     Implements IPacketTransport, IDisposable
-    Public Event PacketReceived(packet As BytePacket) Implements IPacketTransport.PacketReceived
-    Public Event PacketSent(packet As BytePacket) Implements IPacketTransport.PacketSent
+    Public Event PacketReceived(transport As IPacketTransport, packet As BytePacket) Implements IPacketTransport.PacketReceived
+    Public Event PacketSent(transport As IPacketTransport, packet As BytePacket) Implements IPacketTransport.PacketSent
     Public ReadOnly Property AverageTransmitTime As Integer
     Public Property DefaultSettings As New BytePacketSettings Implements IPacketTransport.DefaultSettings
     Public ReadOnly Property Stats As New PacketTransportStats Implements IPacketTransport.Stats
@@ -137,7 +137,7 @@ Public Class UDPTransport
                                 If pkt.State.TransmitComplete Then
                                     _receivingPackets.Remove(pkt)
                                     Stats.PacketsReceived += 1
-                                    RaiseEvent PacketReceived(pkt)
+                                    RaiseEvent PacketReceived(Me, pkt)
                                 End If
                             Case 2
                                 Dim partIndex = BitConverter.ToInt32(_receiveBuffer, 10)

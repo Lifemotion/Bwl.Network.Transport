@@ -1,17 +1,18 @@
 ﻿Imports System.Net.Sockets
 Imports System.Net
+Imports Bwl.Network.Transport
 
 Public Class TCPConnection
-    Implements IConnectionInfo
+    Implements IConnectedClient
     Public ReadOnly Property TcpTransport As TCPTransport
 
-    Public ReadOnly Property Transport As IPacketTransport Implements IConnectionInfo.Transport
+    Public ReadOnly Property Transport As IPacketTransport Implements IConnectedClient.Transport
         Get
             Return TcpTransport
         End Get
     End Property
 
-    Public Property Info As Object Implements IConnectionInfo.Info
+    Public Property Info As Object Implements IConnectedClient.Info
 
     Public Sub New(transport As TCPTransport)
         TcpTransport = transport
@@ -27,7 +28,7 @@ Public Class TCPPortListener
     Private _cleanThread As New Threading.Thread(AddressOf CleanThread)
     Private _parameters As TCPTransport.TCPTransportParameters
 
-    Public Event NewConnection(server As IPortListener, connection As IConnectionInfo) Implements IPortListener.NewConnection
+    Public Event NewConnection(server As IPortListener, connection As IConnectedClient) Implements IPortListener.NewConnection
 
     Private Sub ListenThread()
         Do
@@ -58,27 +59,30 @@ Public Class TCPPortListener
         _cleanThread.Start()
     End Sub
 
-    Public Sub Start(port As Integer)
-        Start(port, New TCPTransport.TCPTransportParameters)
+    Public Sub Open(address As String, options As String) Implements IConnectionControl.Open
+        Dim parts = address.Split({":"}, StringSplitOptions.RemoveEmptyEntries)
+        If parts.Length <> 2 Then Throw New Exception("Address has wrong format! Must be hostname:port")
+        If IsNumeric(parts(1)) = False Then Throw New Exception("Address has wrong format! Must be hostname:port")
+        Open(CInt(Val(parts(1))))
     End Sub
 
-    Public Sub Start(port As Integer, parameters As TCPTransport.TCPTransportParameters)
+    Public Sub Open(port As Integer)
+        Open(port, New TCPTransport.TCPTransportParameters)
+    End Sub
+
+    Public Sub Open(port As Integer, parameters As TCPTransport.TCPTransportParameters)
         Close()
         _parameters = parameters
         _listener = New TcpListener(IPAddress.Any, port)
         _listener.Start()
     End Sub
 
-    Public Sub Close()
+    Public Sub Close() Implements IConnectionControl.Close
         If _listener IsNot Nothing Then
             _listener.Stop()
             _listener = Nothing
         End If
     End Sub
-
-    Public Function IsWorking() As Boolean
-        Return (_listener IsNot Nothing)
-    End Function
 
     Private Sub CleanThread()
         Do
@@ -103,9 +107,17 @@ Public Class TCPPortListener
         Loop
     End Sub
 
-    Public ReadOnly Property ActiveConnections As IConnectionInfo() Implements IPortListener.ActiveConnections
+    Public ReadOnly Property ActiveConnections As IConnectedClient() Implements IPortListener.ActiveConnections
         Get
             Return _activeConnections.ToArray
+        End Get
+    End Property
+
+    Public ReadOnly Property ID As Long Implements IConnectionControl.ID
+
+    Public ReadOnly Property IsConnected As Boolean Implements IConnectionControl.IsConnected
+        Get
+            Return (_listener IsNot Nothing)
         End Get
     End Property
 

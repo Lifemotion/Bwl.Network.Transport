@@ -1,9 +1,8 @@
 ﻿Public Interface IPacketTransport
-    Inherits IConnection
+    Inherits IConnectionControl, IStatsAndSettings
     Function Ping(maximumTimeoutMs As Integer) As Integer
-    Event PacketReceived(packet As BytePacket)
-    Event PacketSent(packet As BytePacket)
+    Event PacketReceived(transport As IPacketTransport, packet As BytePacket)
+    Event PacketSent(transport As IPacketTransport, packet As BytePacket)
     Sub SendPacket(packet As BytePacket)
     Sub SendPacketAsync(packet As BytePacket)
-    Property DefaultSettings As BytePacketSettings
 End Interface

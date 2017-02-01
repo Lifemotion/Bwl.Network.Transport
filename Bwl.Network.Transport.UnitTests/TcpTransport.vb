@@ -7,35 +7,37 @@ Imports Microsoft.VisualStudio.TestTools.UnitTesting
         Dim server As New TCPServer()
         Dim client1 As New TCPTransport()
         Dim client2 As New TCPTransport()
-        Dim connectedList As New List(Of IConnectionInfo)
-        AddHandler server.NewConnection, Sub(s As IPortListener, t As IConnectionInfo)
+        Dim connectedList As New List(Of IConnectedClient)
+        AddHandler server.NewConnection, Sub(s As IPortListener, t As IConnectedClient)
                                              connectedList.Add(t)
                                          End Sub
-        server.Open("3040", "")
+        server.Open("localhost:3040", "")
         client1.Open("localhost:3040", "")
         client2.Open("localhost:3040", "")
         Threading.Thread.Sleep(100)
-        If connectedList.FindAll(Function(t As IConnectionInfo) t.Transport.ID = client1.ID).Count = 1 Then Throw New Exception("Client 1 not received in server.NewConnection")
-        If connectedList.FindAll(Function(t As IConnectionInfo) t.Transport.ID = client2.ID).Count = 1 Then Throw New Exception("Client 2 not received in server.NewConnection")
-        If server.ActiveConnections.Count(Function(t As IConnectionInfo) t.Transport.ID = client1.ID) = 1 Then Throw New Exception("Client 1 not received in server.NewConnection")
-        If server.ActiveConnections.Count(Function(t As IConnectionInfo) t.Transport.ID = client2.ID) = 1 Then Throw New Exception("Client 2 not received in server.NewConnection")
+        If connectedList.FindAll(Function(t As IConnectedClient) t.Transport.ID = client1.ID).Count = 1 Then Throw New Exception("Client 1 not received in server.NewConnection")
+        If connectedList.FindAll(Function(t As IConnectedClient) t.Transport.ID = client2.ID).Count = 1 Then Throw New Exception("Client 2 not received in server.NewConnection")
+        If server.ActiveConnections.Count(Function(t As IConnectedClient) t.Transport.ID = client1.ID) = 1 Then Throw New Exception("Client 1 not received in server.NewConnection")
+        If server.ActiveConnections.Count(Function(t As IConnectedClient) t.Transport.ID = client2.ID) = 1 Then Throw New Exception("Client 2 not received in server.NewConnection")
         client1.Dispose()
         client2.Dispose()
         server.Dispose()
     End Sub
+
+
 
     <TestMethod()> Public Sub TT_SendReceiveAsync()
         Dim server As New TCPServer
         Dim client1 As New TCPTransport()
         Dim serverReceived As BytePacket = Nothing
         Dim serverSent As BytePacket = Nothing
-        AddHandler server.ReceivedPacket, Sub(t As IConnectionInfo, p As BytePacket)
+        AddHandler server.ReceivedPacket, Sub(t As IConnectedClient, p As BytePacket)
                                               serverReceived = p
                                           End Sub
-        AddHandler server.SentPacket, Sub(t As IConnectionInfo, p As BytePacket)
+        AddHandler server.SentPacket, Sub(t As IConnectedClient, p As BytePacket)
                                           serverSent = p
                                       End Sub
-        server.Open("3042", "")
+        server.Open("localhost:3042", "")
         client1.Open("localhost:3042", "")
         Dim bp1 As New BytePacket(PrepareData(0.2))
         client1.SendPacketAsync(bp1)
@@ -61,19 +63,19 @@ Imports Microsoft.VisualStudio.TestTools.UnitTesting
         Dim client1Sent As BytePacket = Nothing
         Dim serverReceived As BytePacket = Nothing
         Dim serverSent As BytePacket = Nothing
-        AddHandler server.ReceivedPacket, Sub(t As IConnectionInfo, p As BytePacket)
+        AddHandler server.ReceivedPacket, Sub(t As IConnectedClient, p As BytePacket)
                                               serverReceived = p
                                           End Sub
-        AddHandler server.SentPacket, Sub(t As IConnectionInfo, p As BytePacket)
+        AddHandler server.SentPacket, Sub(t As IConnectedClient, p As BytePacket)
                                           serverSent = p
                                       End Sub
-        AddHandler client1.PacketReceived, Sub(p As BytePacket)
+        AddHandler client1.PacketReceived, Sub(transport As IPacketTransport, p As BytePacket)
                                                client1Received = p
                                            End Sub
-        AddHandler client1.PacketSent, Sub(p As BytePacket)
+        AddHandler client1.PacketSent, Sub(transport As IPacketTransport, p As BytePacket)
                                            client1Sent = p
                                        End Sub
-        server.Open("3041", "")
+        server.Open("localhost:3041", "")
         client1.Open("localhost:3041", "")
         Dim bp1 As New BytePacket(PrepareData(0.2))
         Assert.AreEqual(False, bp1.State.TransmitStarted)

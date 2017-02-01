@@ -70,9 +70,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Interfaces\IAddressedTransport.vb" />
-    <Compile Include="Interfaces\IConnection.vb" />
+    <Compile Include="Interfaces\IAddressedTransportFactory.vb" />
+    <Compile Include="Interfaces\IConnectionControl.vb" />
     <Compile Include="Interfaces\IPacketTransport.vb" />
     <Compile Include="Interfaces\IPacketTransportFactory.vb" />
+    <Compile Include="Interfaces\IStatsAndSettings.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
       <AutoGen>True</AutoGen>
@@ -98,7 +100,7 @@
     <Compile Include="Common\PacketTransportStats.vb" />
     <Compile Include="Interfaces\IPortListener.vb" />
     <Compile Include="Interfaces\IPacketTransportServer.vb" />
-    <Compile Include="Interfaces\IConnectionInfo.vb" />
+    <Compile Include="Interfaces\IConnectedClient.vb" />
     <Compile Include="Sockets\TCP\TCPAddressedServer.vb" />
     <Compile Include="Sockets\TCP\TCPAddressedTransport.vb" />
     <Compile Include="Sockets\TCP\TCPPortListener.vb" />

@@ -15,8 +15,8 @@ Public Class TCPTransport
         Public Property UseReceiverThreadDelays As Boolean = True
     End Class
 
-    Public Event PacketReceived(packet As BytePacket) Implements IPacketTransport.PacketReceived
-    Public Event PacketSent(packet As BytePacket) Implements IPacketTransport.PacketSent
+    Public Event PacketReceived(transport As IPacketTransport, packet As BytePacket) Implements IPacketTransport.PacketReceived
+    Public Event PacketSent(transport As IPacketTransport, packet As BytePacket) Implements IPacketTransport.PacketSent
     Public Property DefaultSettings As New BytePacketSettings Implements IPacketTransport.DefaultSettings
     Public ReadOnly Property Stats As New PacketTransportStats Implements IPacketTransport.Stats
 
@@ -187,7 +187,7 @@ Public Class TCPTransport
                             If receivingPacket.State.TransmitComplete Then
                                 _receivingPackets.Remove(receivingPacket)
                                 Stats.PacketsReceived += 1
-                                RaiseEvent PacketReceived(receivingPacket)
+                                RaiseEvent PacketReceived(Me, receivingPacket)
                             End If
                         End If
                     End If

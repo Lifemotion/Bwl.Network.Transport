@@ -1,7 +1,7 @@
-﻿Imports Bwl.Network.Transport
+﻿Public Interface IPortListener
+    Inherits IConnectionControl
 
-Public Interface IPortListener
-    Event NewConnection(server As IPortListener, connection As IConnectionInfo)
-    ReadOnly Property ActiveConnections As IConnectionInfo()
+    Event NewConnection(server As IPortListener, connection As IConnectedClient)
+    ReadOnly Property ActiveConnections As IConnectedClient()
 
 End Interface
