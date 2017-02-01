@@ -100,7 +100,7 @@
     <Compile Include="Common\PacketTransportStats.vb" />
     <Compile Include="Interfaces\IPacketPortListener.vb" />
     <Compile Include="Interfaces\IPacketServer.vb" />
-    <Compile Include="Interfaces\IConnectedChannel.vb" />
+    <Compile Include="Sockets\TCP\TCPAddressedChannelBase.vb" />
     <Compile Include="Sockets\TCP\TCPAddressedRepeater.vb" />
     <Compile Include="Sockets\TCP\TCPAddressedServer.vb" />
     <Compile Include="Sockets\TCP\TCPAddressedChannel.vb" />

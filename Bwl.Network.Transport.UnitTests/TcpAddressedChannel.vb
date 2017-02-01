@@ -42,15 +42,15 @@ Imports Microsoft.VisualStudio.TestTools.UnitTesting
                                                      allowRegister = True
                                                  End Sub
         Dim serverReceived As StructuredPacket = Nothing
-        AddHandler server.PacketReceived, Sub(trn As IPacketChannel, msg As StructuredPacket)
+        AddHandler server.PacketReceived, Sub(trn As IAddressedChannel, msg As StructuredPacket)
                                               serverReceived = msg
                                           End Sub
         Dim client1Received As StructuredPacket = Nothing
-        AddHandler client1.PacketReceived, Sub(trn As IPacketChannel, msg As StructuredPacket)
+        AddHandler client1.PacketReceived, Sub(trn As IAddressedChannel, msg As StructuredPacket)
                                                client1Received = msg
                                            End Sub
         Dim client2Received As StructuredPacket = Nothing
-        AddHandler client2.PacketReceived, Sub(trn As IPacketChannel, msg As StructuredPacket)
+        AddHandler client2.PacketReceived, Sub(trn As IAddressedChannel, msg As StructuredPacket)
                                                client2Received = msg
                                            End Sub
         server.Open("localhost:3044", "")

@@ -408,3 +408,21 @@ Public Class TCPChannel
     End Sub
 #End Region
 End Class
+
+Public Class TCPChannelFactory
+    Implements IPacketChannelFactory
+
+    Public ReadOnly Property TransportClass As Type Implements IPacketChannelFactory.TransportClass
+        Get
+            Return (GetType(TCPChannel))
+        End Get
+    End Property
+
+    Public Function Create() As IPacketChannel Implements IPacketChannelFactory.Create
+        Return New TCPChannel
+    End Function
+
+    Public Function Create(socket As Socket, parameters As TCPChannel.TCPTransportParameters) As IPacketChannel Implements IPacketChannelFactory.Create
+        Return New TCPChannel(socket, parameters)
+    End Function
+End Class

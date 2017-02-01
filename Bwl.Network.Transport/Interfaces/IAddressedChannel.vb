@@ -11,8 +11,8 @@
     Function SendPacketWaitAnswer(received As StructuredPacket, Optional timeout As Single = 20) As StructuredPacket
     Function WaitPacket(Optional timeout As Single = 20, Optional pktid As Integer = -1, Optional partKey As String = "")
 
-    Event PacketSent(channel As IPacketChannel, packet As StructuredPacket)
-    Event PacketReceived(channel As IPacketChannel, packet As StructuredPacket)
+    Event PacketSent(channel As IAddressedChannel, packet As StructuredPacket)
+    Event PacketReceived(channel As IAddressedChannel, packet As StructuredPacket)
 
     Function GetPeersList(serviceName As String, Optional timeout As Single = 20) As String()
 End Interface

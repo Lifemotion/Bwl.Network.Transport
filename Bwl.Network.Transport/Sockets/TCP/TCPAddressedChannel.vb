@@ -1,28 +1,16 @@
-﻿Imports Bwl.Network.Transport
+﻿
+Imports System.Net.Sockets
+Imports Bwl.Network.Transport
 
 Public Class TCPAddressedChannel
-    Inherits TCPChannel
+    Inherits TCPAddressedChannelBase
     Implements IAddressedChannel
 
-    Public Event RegisterClientRequest(clientInfo As Dictionary(Of String, String), id As String, method As String, password As String, serviceName As String, options As String, ByRef allowRegister As Boolean, ByRef infoToClient As String) Implements IAddressedChannel.RegisterClientRequest
-    Public Shadows Event PacketReceived(transport As IPacketChannel, packet As StructuredPacket) Implements IAddressedChannel.PacketReceived
-    Public Shadows Event PacketSent(transport As IPacketChannel, packet As StructuredPacket) Implements IAddressedChannel.PacketSent
-    Public ReadOnly Property MyID As String = "" Implements IAddressedChannel.MyID
-    Public ReadOnly Property MyServiceName As String = "" Implements IAddressedChannel.MyServiceName
-
     Public Sub New()
-        AddHandler MyBase.PacketReceived, AddressOf BytePacketReceived
+
     End Sub
 
-    Private Sub BytePacketReceived(transport As IPacketChannel, packet As BytePacket)
-        Try
-            Dim sbp As New StructuredPacket(packet)
-            RaiseEvent PacketReceived(Me, sbp)
-        Catch ex As Exception
-        End Try
-    End Sub
-
-    Public Sub RegisterMe(id As String, password As String, serviceName As String, options As String) Implements IAddressedChannel.RegisterMe
+    Public Overrides Sub RegisterMe(id As String, password As String, serviceName As String, options As String) Implements IAddressedChannel.RegisterMe
         Dim request As New StructuredPacket
         request.Add("@RegisterMe", id)
         request.Add("@RegisterMethod", "simple")
@@ -34,25 +22,10 @@ Public Class TCPAddressedChannel
         If response.Parts.ContainsKey("@RegisterResult") = False Then Throw New Exception("RegisterMe: no PeersList part")
         Dim result As String = response.Parts("@RegisterResult")
         If result <> "OK" Then Throw New Exception(result)
-        _MyID = id
-        _MyServiceName = serviceName
+        MyBase.RegisterMe(id, password, serviceName, options)
     End Sub
 
-    Public Shadows Sub SendPacket(message As StructuredPacket) Implements IAddressedChannel.SendPacket
-        If message.AddressFrom = "" Then message.AddressFrom = MyID
-        Dim bp = message.ToBytePacket
-        MyBase.SendPacket(bp)
-        RaiseEvent PacketSent(Me, message)
-    End Sub
-
-    Public Shadows Sub SendPacketAsync(message As StructuredPacket) Implements IAddressedChannel.SendPacketAsync
-        If message.AddressFrom = "" Then message.AddressFrom = MyID
-        Dim bp = message.ToBytePacket
-        MyBase.SendPacketAsync(bp)
-        RaiseEvent PacketSent(Me, message)
-    End Sub
-
-    Public Function GetPeersList(serviceName As String, Optional timeout As Single = 20) As String() Implements IAddressedChannel.GetPeersList
+    Public Overrides Function GetPeersList(serviceName As String, Optional timeout As Single = 20) As String() Implements IAddressedChannel.GetPeersList
         Dim request As New StructuredPacket
         request.Add("@GetPeersList", serviceName)
         Dim response = SendPacketWaitAnswer(request, timeout)
@@ -61,23 +34,5 @@ Public Class TCPAddressedChannel
         Dim peersList As String() = response.Parts("@PeersList")
         Return peersList
     End Function
-
-    Public Function SendPacketWaitAnswer(message As StructuredPacket, Optional timeout As Single = 20) As StructuredPacket Implements IAddressedChannel.SendPacketWaitAnswer
-        SendPacketAsync(message)
-        Return WaitPacket(timeout, message.MsgID)
-    End Function
-
-    Public Function WaitPacket(Optional timeout As Single = 20, Optional answerToId As Integer = -1, Optional partKey As String = "") As Object Implements IAddressedChannel.WaitPacket
-        Dim received As StructuredPacket = Nothing
-        AddHandler Me.PacketReceived, Sub(transport As IPacketChannel, packet As StructuredPacket)
-                                          If packet.ReplyToID = answerToId Then received = packet
-                                          If partKey > "" AndAlso packet.Parts.ContainsKey(partKey) Then received = packet
-                                          If answerToId = -1 And partKey = "" Then received = packet
-                                      End Sub
-        Dim start = Now
-        Do While (Now - start).TotalSeconds < timeout And received Is Nothing
-            Threading.Thread.Sleep(1)
-        Loop
-        Return received
-    End Function
 End Class
+

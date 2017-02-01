@@ -10,8 +10,8 @@ Public Class TCPAddressedServer
     Implements IAddressedChannel
 
     Public Event RegisterClientRequest(clientInfo As Dictionary(Of String, String), id As String, method As String, password As String, serviceName As String, options As String, ByRef allowRegister As Boolean, ByRef infoToClient As String) Implements IAddressedChannel.RegisterClientRequest
-    Public Event PacketReceived(transport As IPacketChannel, packet As StructuredPacket) Implements IAddressedChannel.PacketReceived
-    Public Event PacketSent(transport As IPacketChannel, packet As StructuredPacket) Implements IAddressedChannel.PacketSent
+    Public Event PacketReceived(transport As IAddressedChannel, packet As StructuredPacket) Implements IAddressedChannel.PacketReceived
+    Public Event PacketSent(transport As IAddressedChannel, packet As StructuredPacket) Implements IAddressedChannel.PacketSent
 
     Public ReadOnly Property MyID As String = "(Server)" Implements IAddressedChannel.MyID
     Public ReadOnly Property MyServiceName As String = "" Implements IAddressedChannel.MyServiceName
@@ -25,7 +25,7 @@ Public Class TCPAddressedServer
         AddHandler NewConnection, AddressOf NewConnectionHandler
     End Sub
 
-    Private Sub PacketReceivedHandler(packet As StructuredPacket, transport As IConnectedChannel)
+    Private Sub PacketReceivedHandler(packet As StructuredPacket, transport As IAddressedChannel)
         If packet.Parts.ContainsKey("@RegisterMe") Then
             Try
                 Dim id As String = packet.Parts("@RegisterMe")
@@ -41,18 +41,17 @@ Public Class TCPAddressedServer
                 response.Add("@RegisterResultMessage", returnInfo)
                 If allow Then
                     response.Add("@RegisterResult", "OK")
-                    transport.Info.ID = id
-                    transport.Info.ServiceName = service
+                    transport.RegisterMe(id, pass, service, options)
                 Else
                     response.Add("@RegisterResult", "NotAllowed")
                 End If
-                transport.Channel.SendPacketAsync(response.ToBytePacket)
+                transport.SendPacketAsync(response)
             Catch ex As Exception
                 Dim response As New StructuredPacket(packet)
                 response.Add("@RegisterResult", "Error")
                 response.Add("@RegisterResultMessage", "Unknown error")
                 Try
-                    transport.Channel.SendPacketAsync(response.ToBytePacket)
+                    transport.SendPacketAsync(response)
                 Catch ex1 As Exception
                 End Try
             End Try
@@ -64,30 +63,30 @@ Public Class TCPAddressedServer
                 Dim response As New StructuredPacket(packet)
                 Dim list = GetPeersList(service).ToArray
                 response.Add("@PeersList", list)
-                transport.Channel.SendPacketAsync(response.ToBytePacket)
+                transport.SendPacketAsync(response)
             Catch ex As Exception
             End Try
         End If
     End Sub
 
-    Private Sub NewConnectionHandler(server As IPacketPortListener, connection As IConnectedChannel)
-        connection.Channel.DefaultSettings = DefaultSettings
-        connection.Info = New TCPClientInfo
-        AddHandler connection.Channel.PacketReceived, Sub(transport As IPacketChannel, packet As BytePacket)
-                                                          Try
-                                                              Dim sbp As New StructuredPacket(packet)
-                                                              PacketReceivedHandler(sbp, connection)
-                                                              RaiseEvent PacketReceived(transport, sbp)
-                                                          Catch ex As Exception
-                                                          End Try
-                                                      End Sub
-        AddHandler connection.Channel.PacketSent, Sub(transport As IPacketChannel, packet As BytePacket)
-                                                      Try
-                                                          Dim sbp As New StructuredPacket(packet)
-                                                          RaiseEvent PacketSent(transport, sbp)
-                                                      Catch ex As Exception
-                                                      End Try
-                                                  End Sub
+    Private Sub NewConnectionHandler(server As IPacketPortListener, connection As IPacketChannel)
+        connection.DefaultSettings = DefaultSettings
+
+        AddHandler connection.PacketReceived, Sub(transport As IPacketChannel, packet As BytePacket)
+                                                  Try
+                                                      Dim sbp As New StructuredPacket(packet)
+                                                      PacketReceivedHandler(sbp, connection)
+                                                      RaiseEvent PacketReceived(transport, sbp)
+                                                  Catch ex As Exception
+                                                  End Try
+                                              End Sub
+        AddHandler connection.PacketSent, Sub(transport As IPacketChannel, packet As BytePacket)
+                                              Try
+                                                  Dim sbp As New StructuredPacket(packet)
+                                                  RaiseEvent PacketSent(transport, sbp)
+                                              Catch ex As Exception
+                                              End Try
+                                          End Sub
     End Sub
 
     Public Sub RegisterMe(id As String, password As String, serviceName As String, options As String) Implements IAddressedChannel.RegisterMe
@@ -99,10 +98,9 @@ Public Class TCPAddressedServer
         If message.AddressFrom = "" Then message.AddressFrom = MyID
         If message.AddressTo = "" Then
             If AllowBroadcastSetting Then
-                Dim bp = message.ToBytePacket
-                For Each client In ActiveConnections.ToArray
+                For Each client As IAddressedChannel In ActiveConnections.ToArray
                     Try
-                        client.Channel.SendPacket(bp)
+                        client.SendPacket(message)
                     Catch ex As Exception
                     End Try
                 Next
@@ -110,10 +108,9 @@ Public Class TCPAddressedServer
                 Throw New Exception("SendPacket: Broadcasts not allowed")
             End If
         Else
-            For Each client In ActiveConnections.ToArray
-                If client.Info.ID.ToLower = message.AddressTo.ToLower Then
-                    Dim bp = message.ToBytePacket
-                    client.Channel.SendPacket(bp)
+            For Each client As IAddressedChannel In ActiveConnections.ToArray
+                If client.MyID.ToLower = message.AddressTo.ToLower Then
+                    client.SendPacket(message)
                     Return
                 End If
             Next
@@ -122,37 +119,36 @@ Public Class TCPAddressedServer
     End Sub
 
     Public Shadows Sub SendPacketAsync(message As StructuredPacket) Implements IAddressedChannel.SendPacketAsync
+        If message.AddressFrom = "" Then message.AddressFrom = MyID
         If message.AddressTo = "" Then
             If AllowBroadcastSetting Then
-                Dim bp = message.ToBytePacket
-                For Each client In ActiveConnections.ToArray
+                For Each client As IAddressedChannel In ActiveConnections.ToArray
                     Try
-                        client.Channel.SendPacketAsync(bp)
+                        client.SendPacketAsync(message)
                     Catch ex As Exception
                     End Try
                 Next
             Else
-                Throw New Exception("SendPacketAsync: Broadcasts not allowed")
+                Throw New Exception("SendPacket: Broadcasts not allowed")
             End If
         Else
-            For Each client In ActiveConnections.ToArray
-                If client.Info.ID.ToLower = message.AddressTo.ToLower Then
-                    Dim bp = message.ToBytePacket
-                    client.Channel.SendPacketAsync(bp)
+            For Each client As IAddressedChannel In ActiveConnections.ToArray
+                If client.MyID.ToLower = message.AddressTo.ToLower Then
+                    client.SendPacketAsync(message)
                     Return
                 End If
             Next
-            Throw New Exception("SendPacketAsync: Client with address " + message.AddressTo + " not found")
+            Throw New Exception("SendPacket: Client with address " + message.AddressTo + " not found")
         End If
     End Sub
 
     Public Function GetPeersList(serviceName As String, Optional timeout As Single = 20) As String() Implements IAddressedChannel.GetPeersList
         Dim list As New List(Of String)
-        If  serviceName = "" Or serviceName = MyServiceName Then list.Add(MyID)
-        For Each client In ActiveConnections.ToArray
+        If serviceName = "" Or serviceName = MyServiceName Then list.Add(MyID)
+        For Each client As IAddressedChannel In ActiveConnections.ToArray
             Try
-                If client.Info.ServiceName.ToLower = serviceName.ToLower Or serviceName = "" Then
-                    If client.Info.ID > "" Then list.Add(client.Info.ID)
+                If client.MyServiceName.ToLower = serviceName.ToLower Or serviceName = "" Then
+                    If client.MyID > "" Then list.Add(client.MyID)
                 End If
             Catch ex As Exception
             End Try
