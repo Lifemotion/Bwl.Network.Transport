@@ -3,7 +3,7 @@ Imports Bwl.Framework
 Imports Bwl.Network.Transport
 
 Public Class RepeaterCore
-    Private WithEvents _netServer As TCPAddressedServer
+    Private WithEvents _netServer As New TCPAddressedServer
     Private _logger As Logger
     Private _storage As SettingsStorage
     Private _port As IntegerSetting
@@ -17,7 +17,8 @@ Public Class RepeaterCore
     End Sub
 
     Public Sub Start()
-        _netServer = New TCPServer
+        _netServer.AllowBroadcastSetting = True
+        _netServer.Server.Open("*:" + _port.Value.ToString, "")
         _logger.AddMessage("Created server on " + _port.Value.ToString)
     End Sub
 
@@ -27,38 +28,35 @@ Public Class RepeaterCore
         End Get
     End Property
 
-    Private Sub _netServer_ReceivedPacket(transport As IPacketChannel, packet As StructuredPacket) Handles _netServer.PacketReceived
-
+    Private Sub _netServer_RegisterClientRequest(clientInfo As Dictionary(Of String, String), id As String, method As String, password As String, serviceName As String, options As String, ByRef allowRegister As Boolean, ByRef infoToClient As String) Handles _netServer.RegisterClientRequest
+        allowRegister = True
     End Sub
 
-    Private Sub _netServer_SentPacket(transport As IPacketChannel, packet As StructuredPacket) Handles _netServer.SentPacket
-        ' If LogMessages Then _logger.AddInformation(client.RegisteredID + "<- " + Message.ToString)
-    End Sub
-
-    Private Sub _netServer_NewConnection(server As IPacketPortListener, transport As IPacketChannel) Handles _netServer.NewConnection
-        _logger.AddMessage("Connected #" + transport.ID.ToString) '+ ", " + transport.IPAddress + ", " + client.ConnectionTime.ToString + "")
-    End Sub
-
-    Private Sub _netServer_ServerReceivedPacket(connection As IConnectedChannel, packet As BytePacket) Handles _netServer.ServerReceivedPacket
+    Private Sub _netServer_PacketReceived(channel As IAddressedChannel, packet As StructuredPacket) Handles _netServer.PacketReceived
         Try
             SyncLock _netServer
-                If connection.Info.ID > "" Then
-                    If LogMessages Then _logger.AddInformation(connection.Info.ID + "-> " + packet.ToString)
+                If channel.MyID > "" Then
+                    If LogMessages Then _logger.AddInformation(channel.MyID + "-> " + packet.ToString)
                     _netServer.SendPacket(packet)
                 Else
-                    _logger.AddWarning(client.ID.ToString + "-> " + "Trying to use repeater without registered id, from " + client.IPAddress)
+                    _logger.AddWarning(channel.MyID.ToString + "-> " + "Trying to use repeater without registered id, from ") '+ client.IPAddress)
                 End If
             End SyncLock
         Catch ex As Exception
             _logger.AddError(ex.Message)
         End Try
-    End Sub
-
-    Private Sub _netServer_ServerSentPacket(connection As IConnectedChannel, packet As BytePacket) Handles _netServer.ServerSentPacket
 
     End Sub
 
-    Public ReadOnly Property NetServer As TCPServer
+    Private Sub _netServer_PacketSent(channel As IAddressedChannel, packet As StructuredPacket) Handles _netServer.PacketSent
+        If LogMessages Then _logger.AddInformation(channel.MyID + "<- " + packet.ToString)
+    End Sub
+
+    Private Sub _netServer_NewConnection(server As IAddressedServer, connection As IAddressedChannel) Handles _netServer.NewConnection
+        '   _logger.AddMessage("Connected #" + connection.channel.ToString) '+ ", " + transport.IPAddress + ", " + client.ConnectionTime.ToString + "")
+    End Sub
+
+    Public ReadOnly Property NetServer As TCPAddressedServer
         Get
             Return _netServer
         End Get

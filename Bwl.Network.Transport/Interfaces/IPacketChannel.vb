@@ -1,5 +1,5 @@
 ﻿Public Interface IPacketChannel
-    Inherits IConnectionControl, IPacketStatsAndSettings
+    Inherits IConnectionControl, IPacketStatsAndSettings, IDisposable
     Function Ping(maximumTimeoutMs As Integer) As Integer
     Event PacketReceived(channel As IPacketChannel, packet As BytePacket)
     Event PacketSent(channel As IPacketChannel, packet As BytePacket)

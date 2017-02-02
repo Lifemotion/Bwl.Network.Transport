@@ -9,7 +9,7 @@ Public Class RepeaterInterface
     Private _clientsList As AutoListbox
     Private _showDumps As Boolean
     Private WithEvents _showDumpsButtons As AutoButton
-    Private _server As TCPServer
+    Private _server As TCPAddressedServer
     Private _core As RepeaterCore
 
     Public Sub New(app As AppBase, core As RepeaterCore)
@@ -30,7 +30,7 @@ Public Class RepeaterInterface
             Dim clients = _server.ActiveConnections
             Dim items As New List(Of String)
             For Each client In clients
-                ' items.Add("#" + client.ID.ToString) '+
+                items.Add("#" + client.MyID.ToString) '+
                 '  ", [" + client.RegisteredID +
                 '   " @ " + client.RegisteredServiceName + "], " +
                 'client.IPAddress + ", Received\Sent: " +

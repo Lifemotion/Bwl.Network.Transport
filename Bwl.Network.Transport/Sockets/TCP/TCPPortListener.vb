@@ -1,17 +1,33 @@
 ﻿Imports System.Net.Sockets
 Imports System.Net
 
+Public Class TCPConnection
+    Implements IConnectedChannel
+    Public ReadOnly Property TcpTransport As TCPChannel
+
+    Public ReadOnly Property Channel As IPacketChannel Implements IConnectedChannel.Channel
+        Get
+            Return TcpTransport
+        End Get
+    End Property
+
+    Public Property Tag As Object Implements IConnectedChannel.Tag
+
+    Public Sub New(transport As TCPChannel)
+        TcpTransport = transport
+    End Sub
+End Class
+
 Public Class TCPPortListener
     Implements IPacketPortListener, IDisposable
 
-    Private _activeConnections As New List(Of IPacketChannel)
+    Private _activeConnections As New List(Of TCPConnection)
     Private _listener As TcpListener
     Private _listenThread As New Threading.Thread(AddressOf ListenThread)
     Private _cleanThread As New Threading.Thread(AddressOf CleanThread)
     Private _parameters As TCPChannel.TCPTransportParameters
-    Private _channelFactory As IPacketChannelFactory
 
-    Public Event NewConnection(server As IPacketPortListener, connection As IPacketChannel) Implements IPacketPortListener.NewConnection
+    Public Event NewConnection(server As IPacketPortListener, connection As IConnectedChannel) Implements IPacketPortListener.NewConnection
 
     Private Sub ListenThread()
         Do
@@ -19,7 +35,7 @@ Public Class TCPPortListener
                 Try
                     If _listener.Pending Then
                         Dim sck = _listener.AcceptSocket
-                        Dim conn = _channelFactory.Create(sck, _parameters)
+                        Dim conn As New TCPConnection(New TCPChannel(sck, _parameters))
                         SyncLock _activeConnections
                             _activeConnections.Add(conn)
                         End SyncLock
@@ -33,12 +49,6 @@ Public Class TCPPortListener
     End Sub
 
     Public Sub New()
-        Me.New(New TCPChannelFactory)
-    End Sub
-
-    Public Sub New(channelFactory As TCPChannelFactory)
-        _channelFactory = channelFactory
-
         _listenThread.IsBackground = True
         _listenThread.Name = "TCPServer_ListenThread"
         _listenThread.Start()
@@ -77,16 +87,15 @@ Public Class TCPPortListener
         Do
             If _listener IsNot Nothing Then
                 Try
-                    Dim removeTransport As IPacketChannel = Nothing
+                    Dim removeTransport As TCPConnection = Nothing
                     SyncLock _activeConnections
                         For Each trn In _activeConnections
-                            If trn.IsConnected = False Then
+                            If trn.Channel.IsConnected = False Then
                                 removeTransport = trn
                             End If
                         Next
                         If removeTransport IsNot Nothing Then
-                            'TODO
-                            'removeTransport.Dispose()
+                            removeTransport.TcpTransport.Dispose()
                             _activeConnections.Remove(removeTransport)
                         End If
                     End SyncLock
@@ -97,7 +106,7 @@ Public Class TCPPortListener
         Loop
     End Sub
 
-    Public ReadOnly Property ActiveConnections As IPacketChannel() Implements IPacketPortListener.ActiveConnections
+    Public ReadOnly Property ActiveConnections As IConnectedChannel() Implements IPacketPortListener.ActiveConnections
         Get
             Return _activeConnections.ToArray
         End Get

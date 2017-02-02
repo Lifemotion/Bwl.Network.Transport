@@ -1,21 +1,49 @@
 ﻿Imports System.Net.Sockets
+Imports Bwl.Network.Transport
 
-Public Class TCPAddressedChannelBase
-    Inherits TCPChannel
-    Implements IAddressedChannel
+Public Class AddressedChannelBase
+    Implements IAddressedClient, IConnectionControl
 
-    Public Event RegisterClientRequest(clientInfo As Dictionary(Of String, String), id As String, method As String, password As String, serviceName As String, options As String, ByRef allowRegister As Boolean, ByRef infoToClient As String) Implements IAddressedChannel.RegisterClientRequest
+    Protected _channel As IPacketChannel
+
     Public Shadows Event PacketReceived(transport As IAddressedChannel, packet As StructuredPacket) Implements IAddressedChannel.PacketReceived
     Public Shadows Event PacketSent(transport As IAddressedChannel, packet As StructuredPacket) Implements IAddressedChannel.PacketSent
     Public ReadOnly Property MyID As String = "" Implements IAddressedChannel.MyID
     Public ReadOnly Property MyServiceName As String = "" Implements IAddressedChannel.MyServiceName
 
-    Friend Sub New()
-        AddHandler MyBase.PacketReceived, AddressOf BytePacketReceived
+    Public ReadOnly Property Channel As IPacketChannel Implements IAddressedClient.Channel
+        Get
+            Return _channel
+        End Get
+    End Property
+
+    Public ReadOnly Property ID As Long Implements IConnectionControl.ID
+        Get
+            Return _channel.ID
+        End Get
+    End Property
+
+    Public ReadOnly Property IsConnected As Boolean Implements IConnectionControl.IsConnected
+        Get
+            Return _channel.IsConnected
+        End Get
+    End Property
+
+    Public Sub Dispose() Implements IDisposable.Dispose
+        _channel.Dispose()
     End Sub
 
-    Friend Sub New(socket As Socket, parameters As TCPTransportParameters)
-        MyBase.New(socket, parameters)
+    Public Sub Open(address As String, options As String) Implements IConnectionControl.Open
+        _channel.Open(address, options)
+    End Sub
+
+    Public Sub Close() Implements IConnectionControl.Close
+        _channel.Close()
+    End Sub
+
+    Public Sub New(channel As IPacketChannel)
+        _channel = channel
+        AddHandler _channel.PacketReceived, AddressOf BytePacketReceived
     End Sub
 
     Private Sub BytePacketReceived(transport As IPacketChannel, packet As BytePacket)
@@ -34,14 +62,14 @@ Public Class TCPAddressedChannelBase
     Public Shadows Sub SendPacket(message As StructuredPacket) Implements IAddressedChannel.SendPacket
         If message.AddressFrom = "" Then message.AddressFrom = MyID
         Dim bp = message.ToBytePacket
-        MyBase.SendPacket(bp)
+        _channel.SendPacket(bp)
         RaiseEvent PacketSent(Me, message)
     End Sub
 
     Public Shadows Sub SendPacketAsync(message As StructuredPacket) Implements IAddressedChannel.SendPacketAsync
         If message.AddressFrom = "" Then message.AddressFrom = MyID
         Dim bp = message.ToBytePacket
-        MyBase.SendPacketAsync(bp)
+        _channel.SendPacketAsync(bp)
         RaiseEvent PacketSent(Me, message)
     End Sub
 
@@ -67,22 +95,6 @@ Public Class TCPAddressedChannelBase
         Loop
         Return received
     End Function
-End Class
 
-Public Class TCPAddressedChannelBaseFactory
-    Implements IPacketChannelFactory
 
-    Public ReadOnly Property TransportClass As Type Implements IPacketChannelFactory.TransportClass
-        Get
-            Return (GetType(TCPAddressedChannelBase))
-        End Get
-    End Property
-
-    Public Function Create() As IPacketChannel Implements IPacketChannelFactory.Create
-        Return New TCPAddressedChannelBase
-    End Function
-
-    Public Function Create(socket As Socket, parameters As TCPChannel.TCPTransportParameters) As IPacketChannel Implements IPacketChannelFactory.Create
-        Return New TCPAddressedChannelBase(socket, parameters)
-    End Function
 End Class

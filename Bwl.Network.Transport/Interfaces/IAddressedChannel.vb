@@ -1,9 +1,8 @@
 ﻿Public Interface IAddressedChannel
-    Inherits IConnectionControl, IPacketStatsAndSettings
+    Inherits IDisposable, IConnectionControl
 
     ReadOnly Property MyID As String
     ReadOnly Property MyServiceName As String
-    Event RegisterClientRequest(clientInfo As Dictionary(Of String, String), id As String, method As String, password As String, serviceName As String, options As String, ByRef allowRegister As Boolean, ByRef infoToClient As String)
     Sub RegisterMe(id As String, password As String, serviceName As String, options As String)
 
     Sub SendPacket(received As StructuredPacket)

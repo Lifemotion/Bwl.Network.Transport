@@ -7,7 +7,7 @@
     Public Property ServiceID As String = ""
     Public Property EnableCRC As Boolean
     Private Shared _rnd As New Random
-    Public ReadOnly Property MsgID As Integer = _rnd.NextDouble
+    Public ReadOnly Property MsgID As Integer = _rnd.Next
     Public Property ReplyToID As Integer = 0
 
     Public Sub Add(key As String, value As Object)
@@ -73,6 +73,16 @@
         Return resultBytes
     End Function
 
+    Public Overrides Function ToString() As String
+        Dim str = MsgID.ToString
+        If ReplyToID > 0 Then str += ">" + ReplyToID.ToString
+        str += ", "
+        For Each part In Parts
+            str += part.Key + " = " + part.Value.ToString + ", "
+        Next
+        str += "(" + AddressFrom + "->" + AddressTo + ", " + ServiceID.ToString + ")"
+        Return str
+    End Function
 
     Public Function ToBytePacket() As BytePacket
         Dim bp As New BytePacket(ToBytes)

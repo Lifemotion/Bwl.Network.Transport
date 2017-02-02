@@ -69,8 +69,10 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Interfaces\IAddressedClient.vb" />
     <Compile Include="Interfaces\IAddressedChannel.vb" />
-    <Compile Include="Interfaces\IAddressedChannelFactory.vb" />
+    <Compile Include="Interfaces\IAddressedServer.vb" />
+    <Compile Include="Interfaces\IConnectedChannel.vb" />
     <Compile Include="Interfaces\IConnectionControl.vb" />
     <Compile Include="Interfaces\IPacketChannel.vb" />
     <Compile Include="Interfaces\IPacketChannelFactory.vb" />
@@ -100,10 +102,11 @@
     <Compile Include="Common\PacketTransportStats.vb" />
     <Compile Include="Interfaces\IPacketPortListener.vb" />
     <Compile Include="Interfaces\IPacketServer.vb" />
-    <Compile Include="Sockets\TCP\TCPAddressedChannelBase.vb" />
-    <Compile Include="Sockets\TCP\TCPAddressedRepeater.vb" />
-    <Compile Include="Sockets\TCP\TCPAddressedServer.vb" />
+    <Compile Include="Addressed\AddressedChannelBase.vb" />
+    <Compile Include="Addressed\AddressedServer.vb" />
+    <Compile Include="Addressed\AddressedChannel.vb" />
     <Compile Include="Sockets\TCP\TCPAddressedChannel.vb" />
+    <Compile Include="Sockets\TCP\TCPAddressedServer.vb" />
     <Compile Include="Sockets\TCP\TCPPortListener.vb" />
     <Compile Include="Sockets\TCP\TCPServer.vb" />
     <Compile Include="Sockets\TCP\TCPChannel.vb" />
