@@ -100,4 +100,70 @@ Imports Microsoft.VisualStudio.TestTools.UnitTesting
         server.Dispose()
 
     End Sub
+
+    <TestMethod()> Public Sub ParalSend()
+        Dim server As New TCPAddressedServer()
+        Dim client1 As New TCPAddressedChannel()
+        AddHandler server.RegisterClientRequest, Sub(clientInfo As Dictionary(Of String, String), id As String, method As String, password As String, serviceName As String, options As String, ByRef allowRegister As Boolean, ByRef infoToClient As String)
+                                                     allowRegister = True
+                                                 End Sub
+        Dim serverReceived As StructuredPacket = Nothing
+        AddHandler server.PacketReceived, Sub(trn As IAddressedChannel, msg As StructuredPacket)
+                                              serverReceived = msg
+                                          End Sub
+        Dim client1Received As StructuredPacket = Nothing
+        AddHandler client1.PacketReceived, Sub(trn As IAddressedChannel, msg As StructuredPacket)
+                                               client1Received = msg
+                                           End Sub
+
+        server.Server.Open("localhost:3044", "")
+        client1.Channel.Open("localhost:3044", "")
+        Threading.Thread.Sleep(100)
+        client1.RegisterMe("Client 1", "", "Service 1", "")
+
+        Dim pktTo1 As New StructuredPacket
+        pktTo1.Add("Key1", "Cat")
+        pktTo1.AddressTo = "Client 1"
+
+
+        Parallel.For(0, 50, Sub(i As Integer)
+                                For index = 1 To 100
+                                    server.SendPacket(pktTo1)
+                                Next
+                            End Sub)
+
+
+
+        Dim pktToServer As New StructuredPacket
+        pktToServer.Add("Key1", "Cat")
+        Threading.Thread.Sleep(100)
+
+        Assert.AreEqual("Client 1", pktTo1.AddressTo)
+        Assert.AreEqual("Client 1", client1Received.AddressTo)
+        Assert.AreEqual("(Server)", pktTo1.AddressFrom)
+        Assert.AreEqual("(Server)", client1Received.AddressFrom)
+
+        Assert.AreEqual("Client 2", pktToServer.AddressFrom)
+        Assert.AreEqual("Client 2", serverReceived.AddressFrom)
+        Assert.AreEqual("", pktToServer.AddressTo)
+        Assert.AreEqual("", serverReceived.AddressTo)
+
+        Dim pktBroadcast As New StructuredPacket
+        pktBroadcast.Add("Key1", "Cat")
+        TestException(Sub()
+                          server.SendPacket(pktBroadcast)
+                      End Sub, "Broadcasts must be disabled by default")
+        server.AllowBroadcastSetting = True
+        server.SendPacket(pktBroadcast)
+        Threading.Thread.Sleep(100)
+
+        Assert.AreEqual("", pktBroadcast.AddressTo)
+        Assert.AreEqual("", client1Received.AddressTo)
+        Assert.AreEqual("(Server)", pktBroadcast.AddressFrom)
+        Assert.AreEqual("(Server)", client1Received.AddressFrom)
+
+        client1.Dispose()
+        server.Dispose()
+
+    End Sub
 End Class
