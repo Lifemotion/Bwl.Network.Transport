@@ -92,6 +92,8 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Compile Include="NetDetect\NetBeacon.vb" />
+    <Compile Include="NetDetect\NetFinder.vb" />
     <Compile Include="Packet\BytePacket.vb" />
     <Compile Include="Packet\BytePacketSettings.vb" />
     <Compile Include="Packet\BytePacketState.vb" />

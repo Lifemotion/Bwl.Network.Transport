@@ -34,6 +34,7 @@ Partial Class AddressedClientForm
         Me.SettingField2 = New Bwl.Framework.SettingField()
         Me.bClient = New System.Windows.Forms.Button()
         Me.SettingField1 = New Bwl.Framework.SettingField()
+        Me.Button1 = New System.Windows.Forms.Button()
         Me.SuspendLayout()
         '
         'logWriter
@@ -161,11 +162,21 @@ Partial Class AddressedClientForm
         Me.SettingField1.Size = New System.Drawing.Size(218, 43)
         Me.SettingField1.TabIndex = 35
         '
+        'Button1
+        '
+        Me.Button1.Location = New System.Drawing.Point(239, 260)
+        Me.Button1.Name = "Button1"
+        Me.Button1.Size = New System.Drawing.Size(75, 23)
+        Me.Button1.TabIndex = 48
+        Me.Button1.Text = "Button1"
+        Me.Button1.UseVisualStyleBackColor = True
+        '
         'AddressedClientForm
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(828, 648)
+        Me.Controls.Add(Me.Button1)
         Me.Controls.Add(Me.cbIsConnected)
         Me.Controls.Add(Me.bClose)
         Me.Controls.Add(Me.SettingField5)
@@ -195,6 +206,7 @@ Partial Class AddressedClientForm
         Me.Controls.SetChildIndex(Me.SettingField5, 0)
         Me.Controls.SetChildIndex(Me.bClose, 0)
         Me.Controls.SetChildIndex(Me.cbIsConnected, 0)
+        Me.Controls.SetChildIndex(Me.Button1, 0)
         Me.ResumeLayout(False)
         Me.PerformLayout()
 
@@ -213,4 +225,5 @@ Partial Class AddressedClientForm
     Friend WithEvents SettingField2 As Framework.SettingField
     Friend WithEvents bClient As Button
     Friend WithEvents SettingField1 As Framework.SettingField
+    Friend WithEvents Button1 As Button
 End Class

@@ -26,6 +26,8 @@ Public Class TCPPortListener
     Private _listenThread As New Threading.Thread(AddressOf ListenThread)
     Private _cleanThread As New Threading.Thread(AddressOf CleanThread)
     Private _parameters As TCPChannel.TCPTransportParameters
+    Private _port As Integer
+    Private _beacon As TransportNetBeacon
 
     Public Event NewConnection(server As IPacketPortListener, connection As IConnectedChannel) Implements IPacketPortListener.NewConnection
 
@@ -69,11 +71,18 @@ Public Class TCPPortListener
         Open(port, New TCPChannel.TCPTransportParameters)
     End Sub
 
+    Public Sub StartBeacon(beaconName As String, localhostOnly As Boolean)
+        If _beacon IsNot Nothing Then _beacon.Finish()
+        If _port = 0 Then Throw New Exception("Portlistener not started, cannot start Beacon")
+        _beacon = New TransportNetBeacon(_port, beaconName, localhostOnly, True)
+    End Sub
+
     Public Sub Open(port As Integer, parameters As TCPChannel.TCPTransportParameters)
         Close()
         _parameters = parameters
         _listener = New TcpListener(IPAddress.Any, port)
         _listener.Start()
+        _port = port
     End Sub
 
     Public Sub Close() Implements IConnectionControl.Close
@@ -81,6 +90,8 @@ Public Class TCPPortListener
             _listener.Stop()
             _listener = Nothing
         End If
+        If _beacon IsNot Nothing Then _beacon.Finish()
+        _port = 0
     End Sub
 
     Private Sub CleanThread()
@@ -137,6 +148,11 @@ Public Class TCPPortListener
                 Try
                     _listener.Stop()
                     _listener = Nothing
+                Catch ex As Exception
+                End Try
+                Try
+                    _beacon.Finish()
+                    _beacon = Nothing
                 Catch ex As Exception
                 End Try
             End If

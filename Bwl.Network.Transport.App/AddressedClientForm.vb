@@ -63,4 +63,8 @@ Public Class AddressedClientForm
         Next
         _client.SendPacket(pkt)
     End Sub
+
+    Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
+        Dim results = TransportNetFinder.Find(1000)
+    End Sub
 End Class
