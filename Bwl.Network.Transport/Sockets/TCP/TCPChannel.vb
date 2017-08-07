@@ -60,6 +60,10 @@ Public Class TCPChannel
         End SyncLock
 
         _parameters = parameters
+
+        ReDim _receiveBodyBuffer(_parameters.BuffersSize - 1)
+        ReDim _sendBuffer(_parameters.BuffersSize - 1)
+
         _socket = socket
         _receiveThread.Name = "UDPTransport_ReceiveThread"
         _receiveThread.Start()
@@ -67,9 +71,6 @@ Public Class TCPChannel
         _cleanThread.Name = "UDPTransport_CleanThread"
         _cleanThread.IsBackground = True
         _cleanThread.Start()
-
-        ReDim _receiveBodyBuffer(_parameters.BuffersSize - 1)
-        ReDim _sendBuffer(_parameters.BuffersSize - 1)
 
         SetupSocket(_socket)
 
@@ -195,15 +196,19 @@ Public Class TCPChannel
                     End If
                 End If
             Catch ex As Exception
-                Stop
+                'Stop
             End Try
-            If _socket Is Nothing OrElse _socket.Connected = False OrElse _socket.Available = 0 Then
-                If _parameters.UseReceiverThreadDelays Then
-                    Threading.Thread.Sleep(1)
-                Else
-                    Threading.Thread.Sleep(0)
+            Try
+                If _socket Is Nothing OrElse _socket.Connected = False OrElse _socket.Available = 0 Then
+                    If _parameters.UseReceiverThreadDelays Then
+                        Threading.Thread.Sleep(1)
+                    Else
+                        Threading.Thread.Sleep(0)
+                    End If
                 End If
-            End If
+            Catch ex As Exception
+                'Stop
+            End Try
         Loop
     End Sub
 
