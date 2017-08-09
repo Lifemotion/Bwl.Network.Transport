@@ -116,9 +116,9 @@ Public Class TCPChannel
                     End If
                 End SyncLock
             Catch ex As Exception
-
             End Try
             Threading.Thread.Sleep(10)
+            If _disposedValue Then Exit Do
         Loop
     End Sub
 
@@ -133,6 +133,7 @@ Public Class TCPChannel
         Dim total As Int32
 
         Do
+            If _disposedValue Then Exit Do
             Try
                 If _socket IsNot Nothing AndAlso _socket.Connected Then
                     If Not receivingBody Then
@@ -392,10 +393,12 @@ Public Class TCPChannel
     End Function
 
 #Region "IDisposable Support"
-    Private disposedValue As Boolean
+    Private _disposedValue As Boolean
 
     Protected Overridable Sub Dispose(disposing As Boolean)
-        If Not disposedValue Then
+        If Not _disposedValue Then
+            _disposedValue = True
+            Threading.Thread.Sleep(1000)
             If disposing Then
                 Try
                     _receiveThread.Abort()
@@ -411,7 +414,6 @@ Public Class TCPChannel
                 End Try
             End If
         End If
-        disposedValue = True
     End Sub
 
     Public Sub Dispose() Implements IDisposable.Dispose
