@@ -67,4 +67,18 @@ Public Class AddressedClientForm
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
         Dim results = TransportNetFinder.Find(1000)
     End Sub
+
+    Private Sub _btnGetPeers_Click(sender As Object, e As EventArgs) Handles _btnGetPeers.Click
+        Try
+            Dim peers = _client.GetPeersList("")
+            Dim str = "peers "
+            For Each peer In peers
+                str += peer
+            Next
+            _logger.AddInformation(str)
+        Catch ex As Exception
+            _logger.AddWarning(ex.Message)
+        End Try
+
+    End Sub
 End Class

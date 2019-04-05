@@ -50,6 +50,18 @@ Public Class TCPPortListener
         Loop
     End Sub
 
+    Protected Sub DelOldConnection(id As String)
+        SyncLock _activeConnections
+            Dim oldConnection = _activeConnections.FirstOrDefault(Function(c)
+                                                                      Return c.Tag.MyID.ToLower = id.ToLower
+                                                                  End Function)
+            If oldConnection IsNot Nothing Then
+                oldConnection.Channel.Dispose()
+                _activeConnections.Remove(oldConnection)
+            End If
+        End SyncLock
+    End Sub
+
     Public Sub New()
         _listenThread.IsBackground = True
         _listenThread.Name = "TCPServer_ListenThread"

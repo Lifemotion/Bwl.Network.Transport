@@ -85,6 +85,7 @@ Public Class AddressedServer
                 response.Add("@RegisterResultMessage", returnInfo)
                 If allow And id > "" Then
                     response.Add("@RegisterResult", "OK")
+                    _server.DeleteOldConnection(id)
                     transport.RegisterMe(id, pass, service, options)
                 Else
                     response.Add("@RegisterResult", "NotAllowed")

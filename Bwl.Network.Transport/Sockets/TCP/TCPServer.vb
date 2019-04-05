@@ -19,4 +19,8 @@ Public Class TCPServer
                                                       RaiseEvent ServerSentPacket(connection, packet)
                                                   End Sub
     End Sub
+
+    Public Sub DeleteOldConnection(id As String) Implements IPacketServer.DeleteOldConnection
+        DelOldConnection(id)
+    End Sub
 End Class
