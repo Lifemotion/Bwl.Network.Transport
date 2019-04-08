@@ -73,7 +73,7 @@ Public Class AddressedClientForm
             Dim peers = _client.GetPeersList("")
             Dim str = "peers "
             For Each peer In peers
-                str += peer
+                str += peer + " ; "
             Next
             _logger.AddInformation(str)
         Catch ex As Exception
