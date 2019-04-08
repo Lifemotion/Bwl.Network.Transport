@@ -11,16 +11,24 @@ Public Class AddressedChannel
     End Sub
 
     Public Overrides Sub RegisterMe(id As String, password As String, serviceName As String, options As String) Implements IAddressedChannel.RegisterMe
+        Threading.Thread.Sleep(100)
         Dim request As New StructuredPacket
         request.Add("@RegisterMe", id)
         request.Add("@RegisterMethod", "simple")
         request.Add("@RegisterService", serviceName)
         request.Add("@RegisterOptions", options)
         request.Add("@RegisterPassword", password)
-        Dim response = SendPacketWaitAnswer(request)
-        If response Is Nothing Then Throw New Exception("RegisterMe: no response")
-        If response.Parts.ContainsKey("@RegisterResult") = False Then Throw New Exception("RegisterMe: no PeersList part")
-        Dim result As String = response.Parts("@RegisterResult")
+
+        Dim result = ""
+        For index = 1 To 3
+            Dim response = SendPacketWaitAnswer(request)
+            If response Is Nothing Then Throw New Exception("RegisterMe: no response")
+            If response.Parts.ContainsKey("@RegisterResult") = False Then Throw New Exception("RegisterMe: no PeersList part")
+            result = response.Parts("@RegisterResult")
+            If result = "OK" Then Exit For
+            Threading.Thread.Sleep(100)
+        Next
+
         If result <> "OK" Then Throw New Exception(result)
         MyBase.RegisterMe(id, password, serviceName, options)
     End Sub

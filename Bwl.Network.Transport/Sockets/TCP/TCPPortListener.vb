@@ -55,10 +55,16 @@ Public Class TCPPortListener
             Dim oldConnection = _activeConnections.FirstOrDefault(Function(c)
                                                                       Return c.Tag.MyID.ToLower = id.ToLower
                                                                   End Function)
-            If oldConnection IsNot Nothing Then
-                oldConnection.Channel.Dispose()
-                _activeConnections.Remove(oldConnection)
-            End If
+            _activeConnections.Remove(oldConnection)
+            Dim removeTh = New Threading.Thread(Sub()
+                                                    Try
+                                                        If oldConnection IsNot Nothing Then
+                                                            oldConnection.Channel.Dispose()
+                                                        End If
+                                                    Catch ex As Exception
+                                                    End Try
+                                                End Sub)
+            removeTh.Start()
         End SyncLock
     End Sub
 

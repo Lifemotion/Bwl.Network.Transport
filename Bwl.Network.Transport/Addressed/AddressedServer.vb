@@ -72,6 +72,8 @@ Public Class AddressedServer
     Private Function PacketReceivedHandler(packet As StructuredPacket, transport As IAddressedChannel)
         If packet.Parts.ContainsKey("@RegisterMe") Then
             Try
+                transport.RegisterMe("start reg", "", "", "")
+
                 Dim id As String = packet.Parts("@RegisterMe")
                 Dim pass As String = packet.Parts("@RegisterPassword")
                 Dim service As String = packet.Parts("@RegisterService")
@@ -83,11 +85,13 @@ Public Class AddressedServer
                 RaiseEvent RegisterClientRequest(info, id, method, pass, service, options, allow, returnInfo)
                 Dim response As New StructuredPacket(packet)
                 response.Add("@RegisterResultMessage", returnInfo)
+                transport.RegisterMe("end reg", "", "", "")
                 If allow And id > "" Then
                     response.Add("@RegisterResult", "OK")
                     _server.DeleteOldConnection(id)
                     transport.RegisterMe(id, pass, service, options)
                 Else
+                    transport.RegisterMe("NotAllowed", "", "", "")
                     response.Add("@RegisterResult", "NotAllowed")
                 End If
                 transport.SendPacketAsync(response)
