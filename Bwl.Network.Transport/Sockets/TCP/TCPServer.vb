@@ -20,7 +20,7 @@ Public Class TCPServer
                                                   End Sub
     End Sub
 
-    Public Sub DeleteOldConnection(id As String) Implements IPacketServer.DeleteOldConnection
-        DelOldConnection(id)
+    Public Sub DeleteOldConnection(id As String, channel As IPacketChannel) Implements IPacketServer.DeleteOldConnection
+        DelOldConnection(id, channel)
     End Sub
 End Class

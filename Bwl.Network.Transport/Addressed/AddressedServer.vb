@@ -62,14 +62,14 @@ Public Class AddressedServer
     Private Sub NewConnectionHandler(server As IPacketPortListener, connection As IConnectedChannel)
         Dim addressedChannel = New AddressedChannelBase(connection.Channel)
         connection.Tag = addressedChannel
-        AddHandler addressedChannel.PacketReceived, Sub(transport As IAddressedChannel, packet As StructuredPacket)
+        AddHandler addressedChannel.PacketReceived, Sub(transport As AddressedChannelBase, packet As StructuredPacket)
                                                         If PacketReceivedHandler(packet, transport) = False Then RaiseEvent PacketReceived(transport, packet)
                                                     End Sub
         AddHandler addressedChannel.PacketSent, Sub(transport As IAddressedChannel, packet As StructuredPacket) RaiseEvent PacketSent(transport, packet)
         RaiseEvent NewConnection(Me, addressedChannel)
     End Sub
 
-    Private Function PacketReceivedHandler(packet As StructuredPacket, transport As IAddressedChannel)
+    Private Function PacketReceivedHandler(packet As StructuredPacket, transport As AddressedChannelBase)
         If packet.Parts.ContainsKey("@RegisterMe") Then
             Try
                 transport.RegisterMe("start reg", "", "", "")
@@ -88,7 +88,7 @@ Public Class AddressedServer
                 transport.RegisterMe("end reg", "", "", "")
                 If allow And id > "" Then
                     response.Add("@RegisterResult", "OK")
-                    _server.DeleteOldConnection(id)
+                    _server.DeleteOldConnection(id, transport.Channel)
                     transport.RegisterMe(id, pass, service, options)
                 Else
                     transport.RegisterMe("NotAllowed", "", "", "")

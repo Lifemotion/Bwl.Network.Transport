@@ -50,21 +50,23 @@ Public Class TCPPortListener
         Loop
     End Sub
 
-    Protected Sub DelOldConnection(id As String)
+    Protected Sub DelOldConnection(id As String, transport As IPacketChannel)
         SyncLock _activeConnections
-            Dim oldConnection = _activeConnections.FirstOrDefault(Function(c)
-                                                                      Return c.Tag.MyID.ToLower = id.ToLower
-                                                                  End Function)
-            _activeConnections.Remove(oldConnection)
-            Dim removeTh = New Threading.Thread(Sub()
-                                                    Try
-                                                        If oldConnection IsNot Nothing Then
-                                                            oldConnection.Channel.Dispose()
-                                                        End If
-                                                    Catch ex As Exception
-                                                    End Try
-                                                End Sub)
-            removeTh.Start()
+            Dim oldConnections = _activeConnections.Where(Function(c)
+                                                              Return (c.Tag.MyID.ToLower = id.ToLower) AndAlso (Not (c.Channel Is transport))
+                                                          End Function)
+            For Each oldConn In oldConnections
+                _activeConnections.Remove(oldConn)
+                Dim removeTh = New Threading.Thread(Sub()
+                                                        Try
+                                                            If oldConn IsNot Nothing Then
+                                                                oldConn.Channel.Dispose()
+                                                            End If
+                                                        Catch ex As Exception
+                                                        End Try
+                                                    End Sub)
+                removeTh.Start()
+            Next
         End SyncLock
     End Sub
 
