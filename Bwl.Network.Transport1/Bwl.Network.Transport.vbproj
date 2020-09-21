@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bwl.Network.Transport</RootNamespace>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <OptionExplicit>Off</OptionExplicit>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Import Include="System.DateTime" />
+  </ItemGroup>
+
+</Project>

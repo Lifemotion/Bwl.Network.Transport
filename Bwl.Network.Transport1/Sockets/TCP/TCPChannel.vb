@@ -86,7 +86,7 @@ Public Class TCPChannel
             Next
             Dim newPkt As New SocketBytePacket(id, partCount, totalBytes)
             newPkt.State.TransmitStarted = True
-            newPkt.State.TransmitStartTime = DateTime.Now
+            newPkt.State.TransmitStartTime = Now
             newPkt.Settings = DefaultSettings
             _receivingPackets.Add(newPkt)
             Return newPkt
@@ -106,7 +106,7 @@ Public Class TCPChannel
                     For Each pkt In _receivingPackets
                         If pkt.State.TransmitComplete Then
                             '  removePacket = pkt
-                        ElseIf (DateTime.Now - pkt.State.TransmitStartTime).TotalMilliseconds > pkt.Settings.SendTimeoutMs Then
+                        ElseIf (Now - pkt.State.TransmitStartTime).TotalMilliseconds > pkt.Settings.SendTimeoutMs Then
                             removePacket = pkt
                         End If
                     Next
@@ -276,15 +276,15 @@ Public Class TCPChannel
         spacket.State.TransmitComplete = False
         spacket.State.TransmitProgress = 0
         spacket.State.TransmitStarted = True
-        spacket.State.TransmitStartTime = DateTime.Now
+        spacket.State.TransmitStartTime = Now
 
         SyncLock (_sendingPackets)
             _sendingPackets.Add(spacket)
         End SyncLock
-        Dim started = DateTime.Now
+        Dim started = Now
         Dim sent = 0
         Try
-            Do While sent < spacket.Parts.Count And (DateTime.Now - started).TotalMilliseconds < spacket.Settings.SendTimeoutMs
+            Do While sent < spacket.Parts.Count And (Now - started).TotalMilliseconds < spacket.Settings.SendTimeoutMs
                 SendPart(spacket, sent)
                 spacket.State.TransmitProgress = sent / spacket.Parts.Count
                 sent += 1
@@ -292,7 +292,7 @@ Public Class TCPChannel
             SyncLock (_sendingPackets)
                 _sendingPackets.Remove(spacket)
             End SyncLock
-            spacket.State.TransmitFinishTime = DateTime.Now
+            spacket.State.TransmitFinishTime = Now
             spacket.State.TransmitProgress = 1
             spacket.State.TransmitComplete = True
             Stats.PacketsSent += 1
@@ -356,7 +356,7 @@ Public Class TCPChannel
             _sendBuffer(35) = 4
 
             Array.Copy(packet.Bytes, part.Offset, _sendBuffer, _headerSize, part.Length)
-            part.SendTime = DateTime.Now
+            part.SendTime = Now
             Stats.BytesSent += part.Length + _headerSize
             _socket.Send(_sendBuffer, part.Length + _headerSize, SocketFlags.None)
             part.Sent = True
@@ -369,7 +369,7 @@ Public Class TCPChannel
             Dim startTime As DateTime
             Dim finishTime As DateTime
             SyncLock _sendBuffer
-                startTime = DateTime.Now
+                startTime = Now
                 For i = 0 To _headerSize - 1
                     _sendBuffer(i) = 0
                 Next
@@ -384,7 +384,7 @@ Public Class TCPChannel
                 Stats.BytesSent += 36
                 Dim send = _socket.Send(_sendBuffer, 36, SocketFlags.None)
                 '_socket.Send(_sendBuffer, 36, SocketFlags.None)
-                finishTime = DateTime.Now
+                finishTime = Now
             End SyncLock
             Return (finishTime - startTime).TotalMilliseconds + 1
         Catch ex As Exception

@@ -45,7 +45,7 @@ Public Class UDPChannelSimple
                         pkt.State.TransmitComplete = True
                         pkt.State.TransmitProgress = 1
                         pkt.State.TransmitStarted = 1
-                        pkt.State.TransmitStartTime = DateTime.Now
+                        pkt.State.TransmitStartTime = Now
                         RaiseEvent PacketReceived(Me, pkt)
                     End If
                 End If

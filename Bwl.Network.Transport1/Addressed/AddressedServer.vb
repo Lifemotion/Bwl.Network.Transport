@@ -69,7 +69,7 @@ Public Class AddressedServer
         RaiseEvent NewConnection(Me, addressedChannel)
     End Sub
 
-    Private Function PacketReceivedHandler(packet As StructuredPacket, transport As AddressedChannelBase) As Boolean
+    Private Function PacketReceivedHandler(packet As StructuredPacket, transport As AddressedChannelBase)
         If packet.Parts.ContainsKey("@RegisterMe") Then
             Try
                 transport.RegisterMe("start reg", "", "", "")
@@ -131,8 +131,7 @@ Public Class AddressedServer
             If AllowBroadcastSetting Then
                 For Each client In _server.ActiveConnections.ToArray
                     Try
-                        Dim clientTag As IAddressedClient = client.Tag
-                        If async Then clientTag.SendPacketAsync(message) Else clientTag.SendPacket(message)
+                        If async Then client.Tag.SendPacketAsync(message) Else client.Tag.SendPacket(message)
                     Catch ex As Exception
                     End Try
                 Next
@@ -141,9 +140,8 @@ Public Class AddressedServer
             End If
         Else
             For Each client In _server.ActiveConnections.ToArray
-                Dim clientTag As IAddressedClient = client.Tag
-                If clientTag.MyID.ToLower = message.AddressTo.ToLower Then
-                    If async Then clientTag.SendPacketAsync(message) Else clientTag.SendPacket(message)
+                If client.Tag.MyID.ToLower = message.AddressTo.ToLower Then
+                    If async Then client.Tag.SendPacketAsync(message) Else client.Tag.SendPacket(message)
                     Return
                 End If
             Next
@@ -165,9 +163,8 @@ Public Class AddressedServer
         If serviceName = "" Or serviceName = MyServiceName Then list.Add(MyID)
         For Each client In _server.ActiveConnections.ToArray
             Try
-                Dim clientTag As IAddressedClient = client.Tag
-                If clientTag.MyServiceName.ToLower = serviceName.ToLower Or serviceName = "" Then
-                    If clientTag.MyID > "" Then list.Add(clientTag.MyID)
+                If client.Tag.MyServiceName.ToLower = serviceName.ToLower Or serviceName = "" Then
+                    If client.Tag.MyID > "" Then list.Add(client.Tag.MyID)
                 End If
             Catch ex As Exception
             End Try

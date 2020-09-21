@@ -11,7 +11,8 @@
     <AssemblyName>Bwl.Network.Transport.App</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <MyType>WindowsForms</MyType>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -85,6 +86,7 @@
     <Compile Include="My Project\Application.Designer.vb">
       <AutoGen>True</AutoGen>
       <DependentUpon>Application.myapp</DependentUpon>
+      <DesignTime>True</DesignTime>
     </Compile>
     <Compile Include="My Project\Resources.Designer.vb">
       <AutoGen>True</AutoGen>
@@ -118,6 +120,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="My Project\Application.myapp">
       <Generator>MyApplicationCodeGenerator</Generator>
       <LastGenOutput>Application.Designer.vb</LastGenOutput>
@@ -130,7 +133,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Bwl.Network.Transport\Bwl.Network.Transport.vbproj">
-      <Project>{77a0fb67-cebf-4c85-b82c-f4e62aff6035}</Project>
+      <Project>{641f1ccc-2472-47a0-ac9e-07d4f3328684}</Project>
       <Name>Bwl.Network.Transport</Name>
     </ProjectReference>
   </ItemGroup>

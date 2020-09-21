@@ -52,10 +52,8 @@ Public Class TCPPortListener
 
     Protected Sub DelOldConnection(id As String, transport As IPacketChannel)
         SyncLock _activeConnections
-            Dim oldConnections = _activeConnections.Where(Function(c As TCPConnection)
-                                                              Dim clientTag As IAddressedClient = c.Tag
-
-                                                              Return (clientTag.MyID.ToLower = id.ToLower) AndAlso (Not (c.Channel Is transport))
+            Dim oldConnections = _activeConnections.Where(Function(c)
+                                                              Return (c.Tag.MyID.ToLower = id.ToLower) AndAlso (Not (c.Channel Is transport))
                                                           End Function)
             For Each oldConn In oldConnections
                 _activeConnections.Remove(oldConn)

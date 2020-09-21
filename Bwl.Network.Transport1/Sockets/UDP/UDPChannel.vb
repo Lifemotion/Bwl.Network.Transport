@@ -54,7 +54,7 @@ Public Class UDPChannel
             Next
             Dim newPkt As New SocketBytePacket(id, partCount, totalBytes)
             newPkt.State.TransmitStarted = True
-            newPkt.State.TransmitStartTime = DateTime.Now
+            newPkt.State.TransmitStartTime = Now
             newPkt.Settings = DefaultSettings
             _receivingPackets.Add(newPkt)
             Return newPkt
@@ -72,7 +72,7 @@ Public Class UDPChannel
                     For Each pkt In _receivingPackets
                         If pkt.State.TransmitComplete Then
                             '  removePacket = pkt
-                        ElseIf (DateTime.Now - pkt.State.TransmitStartTime).TotalMilliseconds > pkt.Settings.SendTimeoutMs Then
+                        ElseIf (Now - pkt.State.TransmitStartTime).TotalMilliseconds > pkt.Settings.SendTimeoutMs Then
                             removePacket = pkt
                         End If
                     Next
@@ -146,7 +146,7 @@ Public Class UDPChannel
                                         If pkt.Parts(partIndex).Transmitted = False Then
                                             pkt.TransmittedCount += 1
                                             pkt.Parts(partIndex).Transmitted = True
-                                            Dim delay = (DateTime.Now - pkt.Parts(partIndex).SendTime).TotalMilliseconds
+                                            Dim delay = (Now - pkt.Parts(partIndex).SendTime).TotalMilliseconds
                                             If AverageTransmitTime = 0 Then
                                                 _AverageTransmitTime = delay
                                             Else
@@ -224,16 +224,16 @@ Public Class UDPChannel
         spacket.State.TransmitComplete = False
         spacket.State.TransmitProgress = 0
         spacket.State.TransmitStarted = True
-        spacket.State.TransmitStartTime = DateTime.Now
+        spacket.State.TransmitStartTime = Now
 
         _sendingPackets.Add(spacket)
 
-        Dim started = DateTime.Now
+        Dim started = Now
         Dim sent = 0
         Dim transmitted = 0
         Dim retransmits = 0
 
-        Do While transmitted < spacket.Parts.Count And (DateTime.Now - started).TotalMilliseconds < spacket.Settings.SendTimeoutMs
+        Do While transmitted < spacket.Parts.Count And (Now - started).TotalMilliseconds < spacket.Settings.SendTimeoutMs
             transmitted = spacket.TransmittedCount
             Dim noAck = sent - transmitted
             If noAck < spacket.Settings.AckWaitWindow And sent < spacket.Parts.Count Then
@@ -247,7 +247,7 @@ Public Class UDPChannel
                 'find lost packets
                 For i = 0 To spacket.Parts.Count - 1
                     Dim part = spacket.Parts(i)
-                    If part.Sent = True AndAlso part.Transmitted = False AndAlso (DateTime.Now - part.SendTime).TotalMilliseconds > AverageTransmitTime * spacket.Settings.RetransmitTimeoutMultiplier Then
+                    If part.Sent = True AndAlso part.Transmitted = False AndAlso (Now - part.SendTime).TotalMilliseconds > AverageTransmitTime * spacket.Settings.RetransmitTimeoutMultiplier Then
                         If packet.Settings.MaxAllowedRetransmits > part.Retransmits Then
                             part.Retransmits += 1
                             retransmits += 1
@@ -261,7 +261,7 @@ Public Class UDPChannel
         spacket.State.RetransmitCount = retransmits
         Stats.Retransmits += retransmits
 
-        spacket.State.TransmitFinishTime = DateTime.Now
+        spacket.State.TransmitFinishTime = Now
         _sendingPackets.Remove(spacket)
         If transmitted = spacket.Parts.Count Then
             spacket.State.TransmitProgress = 1
@@ -298,7 +298,7 @@ Public Class UDPChannel
             Dim startTime As DateTime
             Dim finishTime As DateTime
             SyncLock _sendBuffer
-                startTime = DateTime.Now
+                startTime = Now
                 For i = 0 To 31
                     _sendBuffer(i) = 0
                 Next
@@ -339,7 +339,7 @@ Public Class UDPChannel
             Next
 
             Array.Copy(packet.Bytes, part.Offset, _sendBuffer, 32, part.Length)
-            part.SendTime = DateTime.Now
+            part.SendTime = Now
             Stats.BytesSent += part.Length + 32
             _socket.Send(_sendBuffer, part.Length + 32, SocketFlags.None)
             part.Sent = True

@@ -89,8 +89,8 @@ Public Class AddressedChannelBase
                                           If partKey > "" AndAlso packet.Parts.ContainsKey(partKey) Then received = packet
                                           If answerToId = -1 And partKey = "" Then received = packet
                                       End Sub
-        Dim start = DateTime.Now
-        Do While (DateTime.Now - start).TotalSeconds < timeout And received Is Nothing
+        Dim start = Now
+        Do While (Now - start).TotalSeconds < timeout And received Is Nothing
             Threading.Thread.Sleep(1)
         Loop
         Return received

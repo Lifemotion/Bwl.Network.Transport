@@ -14,9 +14,9 @@ Public Class TransportNetFinder
         Dim list As New List(Of NetBeaconInfo)
         Dim locEp As New IPEndPoint(IPAddress.Any, 19999)
         Dim udp As New Net.Sockets.UdpClient(locEp)
-        Dim time = DateTime.Now
+        Dim time = Now
         Try
-            Do While (DateTime.Now - time).TotalMilliseconds < timeout
+            Do While (Now - time).TotalMilliseconds < timeout
                 Dim t = udp.Available
                 If t > 0 Then
                     Dim iep = New IPEndPoint(IPAddress.Any, 0)
